@@ -678,6 +678,75 @@ const GlobalStyle = () => (
     .presentation { max-width: 760px; margin: 0 auto; }
     .presentation .card { padding: 26px 30px; }
     .footnote { font-size: 11.5px; color: var(--ink-faint); line-height: 1.5; }
+
+    /* =====================================================================
+       PREMIUM PRESENTATION (pv-*) — NOVO, isolado do restante do app.
+       Usado apenas pelos documentos exportáveis da aba "Apresentação"
+       (Executiva / Detalhada). Não reaproveita nem sobrescreve nenhuma
+       classe acima — identidade visual própria, mais editorial/imobiliária.
+       ===================================================================== */
+    .pv-doc { max-width: 780px; margin: 0 auto; background: var(--paper); }
+    .pv-page { background: var(--paper); padding: 64px 58px; min-height: 980px; box-sizing: border-box; border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; }
+    .pv-page:last-child { border-bottom: none; }
+    .pv-eyebrow { font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 18px; }
+    .pv-kicker { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 10px; }
+    .pv-title { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; font-size: 34px; line-height: 1.18; color: var(--ink); letter-spacing: -0.01em; margin: 0 0 14px 0; }
+    .pv-title-sm { font-family: Georgia, serif; font-size: 24px; line-height: 1.25; color: var(--ink); margin: 0 0 16px 0; }
+    .pv-sub { font-size: 14px; color: var(--ink-soft); line-height: 1.7; max-width: 560px; }
+    .pv-meta { font-size: 12.5px; color: var(--ink-faint); letter-spacing: 0.02em; margin-bottom: 30px; }
+    .pv-rule { height: 1px; background: var(--line); margin: 34px 0; border: none; }
+    .pv-rule-sm { height: 1px; background: var(--line-soft); margin: 20px 0; border: none; }
+    .pv-hero-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px 40px; margin-top: 10px; }
+    .pv-stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); font-weight: 700; margin-bottom: 6px; }
+    .pv-stat-num { font-family: Georgia, serif; font-size: 40px; line-height: 1.05; color: var(--ink); letter-spacing: -0.01em; }
+    .pv-stat-num small { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 500; color: var(--ink-faint); margin-left: 4px; }
+    .pv-stat-num.pv-accent { color: var(--accent); }
+    .pv-conclusion { margin-top: auto; padding-top: 28px; font-size: 15px; line-height: 1.7; color: var(--ink); font-family: Georgia, serif; font-style: italic; border-top: 1px solid var(--line-soft); }
+    .pv-scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 10px; }
+    .pv-scenario { padding: 22px 18px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); }
+    .pv-scenario.pv-featured { background: var(--accent-soft); border-color: var(--accent); position: relative; }
+    .pv-scenario-tag { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--ink-faint); margin-bottom: 12px; }
+    .pv-scenario.pv-featured .pv-scenario-tag { color: var(--accent); }
+    .pv-scenario-diaria { font-family: Georgia, serif; font-size: 26px; color: var(--ink); margin-bottom: 4px; }
+    .pv-scenario-row { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+    .pv-scenario-receita { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+    .pv-vs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 22px; margin-top: 24px; }
+    .pv-vs-col { padding: 26px 22px; border: 1px solid var(--line); border-radius: 4px; text-align: center; }
+    .pv-vs-col.pv-win { border-color: var(--accent); background: var(--accent-soft); }
+    .pv-vs-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 700; margin-bottom: 10px; }
+    .pv-vs-num { font-family: Georgia, serif; font-size: 28px; color: var(--ink); }
+    .pv-vs-sep { font-family: Georgia, serif; font-style: italic; color: var(--ink-faint); font-size: 13px; }
+    .pv-note { margin-top: 22px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; background: var(--bg); border-left: 2px solid var(--accent); padding: 12px 16px; }
+    .pv-pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 12px; }
+    .pv-pillar { text-align: left; }
+    .pv-pillar-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+    .pv-pillar-num { font-family: Georgia, serif; font-size: 32px; color: var(--ink); margin-bottom: 6px; }
+    .pv-pillar-desc { font-size: 12.5px; color: var(--ink-soft); line-height: 1.55; }
+    .pv-list-clean { list-style: none; margin: 0; padding: 0; }
+    .pv-list-clean li { padding: 12px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; color: var(--ink); display: flex; gap: 10px; align-items: baseline; }
+    .pv-list-clean li:last-child { border-bottom: none; }
+    .pv-list-clean li::before { content: "—"; color: var(--accent); flex-shrink: 0; }
+    .pv-timeline { margin-top: 14px; }
+    .pv-timeline-item { display: grid; grid-template-columns: 150px 1fr; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--line-soft); }
+    .pv-timeline-item:last-child { border-bottom: none; }
+    .pv-timeline-when { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 700; }
+    .pv-timeline-what { font-size: 14px; color: var(--ink); font-weight: 700; margin-bottom: 2px; }
+    .pv-timeline-desc { font-size: 12.5px; color: var(--ink-soft); }
+    .pv-comp-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 8px; }
+    .pv-comp-table { width: 100%; border-collapse: collapse; margin-top: 22px; font-size: 12.5px; }
+    .pv-comp-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    .pv-comp-table td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); color: var(--ink); }
+    .pv-cta { margin-top: auto; text-align: center; padding: 50px 20px 10px 20px; }
+    .pv-cta-quote { font-family: Georgia, serif; font-size: 25px; font-style: italic; color: var(--ink); line-height: 1.4; max-width: 480px; margin: 0 auto 18px auto; }
+    .pv-cta-sub { font-size: 13px; color: var(--ink-soft); max-width: 460px; margin: 0 auto; line-height: 1.6; }
+    .pv-brandmark { font-family: Georgia, serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); text-align: center; margin-top: 40px; }
+    .pv-format-card { flex: 1; border: 1px solid var(--line); border-radius: 4px; padding: 18px 20px; cursor: pointer; background: var(--paper); }
+    .pv-format-card.active { border-color: var(--accent); background: var(--accent-soft); }
+    .pv-format-title { font-weight: 700; font-size: 14px; color: var(--ink); margin-bottom: 4px; }
+    .pv-format-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+    @media print {
+      .pv-page { break-after: page; }
+    }
   `}</style>
 );
 
@@ -1661,14 +1730,34 @@ function SettingsScreen({ settings, setSettings, onExportBackup, onImportBackup 
 
 /* =========================================================================
    APRESENTAÇÃO — camada comercial voltada ao proprietário
-   (NOVO — não altera nada acima; reutiliza os componentes e dados já
-   existentes, apenas filtra o que é exibido, conforme solicitado.)
+   (ATUALIZADO — dois formatos de documento exportável, Executiva e
+   Detalhada, com identidade visual premium própria (classes pv-*, ver
+   GlobalStyle). Reutiliza os mesmos dados já calculados por runAnalysis;
+   não altera nenhum cálculo, nem login/autenticação/Supabase/comparáveis.
+   Continua sem mostrar, em nenhum dos dois formatos: nomes/endereços dos
+   comparáveis, scores, pesos, metodologia interna de score, custos
+   internos, comissão ou margem.)
    ========================================================================= */
 
 const DEFAULT_APRESENTACAO_TEXTS = {
   gestao: "Cuido de todo o dia a dia da locação por temporada: posicionamento do anúncio, precificação, comunicação com os hóspedes, agenda de limpeza e enxoval, manutenção e acompanhamento constante do desempenho do imóvel.",
   proximoPasso: "Vamos avaliar juntos a melhor estratégia para este imóvel.",
 };
+
+// Referências de mercado usadas como contexto comercial (não são calculadas
+// a partir dos dados do usuário — são números de mercado fornecidos para
+// compor a narrativa das páginas "Mercado" / "Por que este imóvel tem
+// potencial", sempre apresentados como referência, nunca como garantia).
+const MARKET_REFERENCE = {
+  imoveisAnunciados: "500+",
+  ocupacaoMediaPct: 65,
+};
+
+const OPPORTUNITY_TIMELINE = [
+  { when: "Maio", what: "Expoingá", desc: "Uma das maiores feiras agropecuárias do Sul do Brasil, com grande fluxo de visitantes para a região." },
+  { when: "Novembro a Janeiro", what: "Maringá Encantada", desc: "Evento natalino de grande porte, com movimentação de visitantes ao longo de vários meses." },
+  { when: "Janeiro / Fevereiro / Julho", what: "Calendário universitário", desc: "Períodos de matrícula, início e retorno de semestre letivo, com movimentação de estudantes e famílias." },
+];
 
 function PositiveFactorsList({ target, result }) {
   const items = [];
@@ -1690,13 +1779,392 @@ function PositiveFactorsList({ target, result }) {
   if (target.acabamentoSuperior) items.push("Acabamento superior");
   items.push(`Padrão ${target.padrao}, alinhado à demanda observada na região`);
   return (
-    <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.9 }}>
+    <ul className="pv-list-clean">
       {items.map((it, i) => <li key={i}>{it}</li>)}
     </ul>
   );
 }
 
-function ApresentacaoScreen({ target, result, texts, setTexts, exportRef, onExportPdf, exporting }) {
+// Resumo agregado dos comparáveis usados na análise — nunca expõe qual
+// comparável é qual (sem endereço/bairro individual), apenas estatísticas
+// agrupadas, preservando a mesma regra de privacidade já adotada acima.
+function summarizeComparables(chosen) {
+  const comps = chosen.map((c) => c.comp);
+  const n = comps.length;
+  const diarias = comps.map((c) => toNum(c.diaria)).filter((v) => v > 0).sort((a, b) => a - b);
+  const notas = comps.map((c) => toNum(c.nota)).filter((v) => v > 0);
+  const min = diarias.length ? diarias[0] : null;
+  const max = diarias.length ? diarias[diarias.length - 1] : null;
+  const mid = Math.floor(diarias.length / 2);
+  const mediana = diarias.length ? (diarias.length % 2 ? diarias[mid] : (diarias[mid - 1] + diarias[mid]) / 2) : null;
+  const notaMedia = notas.length ? mean(notas) : null;
+  const porRegiao = {};
+  comps.forEach((c) => { const r = c.regiao || c.zona || "Não informado"; porRegiao[r] = (porRegiao[r] || 0) + 1; });
+  const porPadrao = {};
+  comps.forEach((c) => { const p = c.padrao || "Não informado"; porPadrao[p] = (porPadrao[p] || 0) + 1; });
+  return { n, min, max, mediana, notaMedia, porRegiao, porPadrao };
+}
+
+/* --------------------------- blocos compartilhados --------------------------- */
+
+function PvScenarioCard({ label, s, featured }) {
+  return (
+    <div className={`pv-scenario${featured ? " pv-featured" : ""}`}>
+      <div className="pv-scenario-tag">{label}</div>
+      <div className="pv-scenario-diaria">{fmtMoney(s.diaria)}<span style={{ fontSize: 12, fontWeight: 400, color: "var(--ink-faint)" }}>/noite</span></div>
+      <div className="pv-scenario-row">Ocupação {fmtPct(s.ocupPct)} · {s.noitesOcupadas.toFixed(0)} noites/mês</div>
+      <div className="pv-scenario-receita">{fmtMoney(s.receita)} <span style={{ fontWeight: 400, color: "var(--ink-soft)", fontSize: 11.5 }}>receita/mês</span></div>
+      <div className="pv-scenario-row" style={{ marginTop: 4 }}>Projeção anual: {fmtMoney(s.receita * 12)}</div>
+    </div>
+  );
+}
+
+function PvResumoExecutivo({ target, result }) {
+  const { diaria, ocupacao, scenarios, annualProvavel } = result;
+  const localLabel = target.bairro || target.zona || "Maringá/PR";
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Estudo de potencial</div>
+      <h1 className="pv-title">Estudo de Potencial para Locação por Temporada</h1>
+      <div className="pv-meta">{target.tipo} · {target.quartos} quarto(s) · {target.area ? `${target.area} m²` : "Área não informada"} · {localLabel}</div>
+      <div className="pv-hero-grid">
+        <div>
+          <div className="pv-stat-label">Diária provável</div>
+          <div className="pv-stat-num pv-accent">{fmtMoney(diaria.provavel)}<small>/noite</small></div>
+        </div>
+        <div>
+          <div className="pv-stat-label">Ocupação estimada</div>
+          <div className="pv-stat-num">{fmtPct(ocupacao.provavel)}</div>
+        </div>
+        <div>
+          <div className="pv-stat-label">Receita mensal provável</div>
+          <div className="pv-stat-num pv-accent">{fmtMoney(scenarios.provavel.receita)}</div>
+        </div>
+        <div>
+          <div className="pv-stat-label">Projeção anual estimada</div>
+          <div className="pv-stat-num">{fmtMoney(annualProvavel)}</div>
+        </div>
+      </div>
+      <div className="pv-conclusion">
+        Com base no perfil deste imóvel e em referências de mercado para a região, identificamos potencial
+        consistente para exploração via locação por temporada, com uma faixa de receita provável a explorar
+        de forma estruturada.
+      </div>
+    </div>
+  );
+}
+
+function PvPotencialFinanceiro({ result }) {
+  const { scenarios } = result;
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Potencial financeiro</div>
+      <h2 className="pv-title-sm">Quanto este imóvel pode gerar?</h2>
+      <p className="pv-sub">Três cenários de mercado, construídos a partir de imóveis comparáveis e indicadores de ocupação da região. O cenário provável é a referência central de planejamento.</p>
+      <div className="pv-scenarios">
+        <PvScenarioCard label="Conservador" s={scenarios.conservador} />
+        <PvScenarioCard label="Provável" s={scenarios.provavel} featured />
+        <PvScenarioCard label="Otimista" s={scenarios.otimista} />
+      </div>
+    </div>
+  );
+}
+
+function PvComparacaoTradicional({ result }) {
+  const { comparison, scenarios } = result;
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Comparação de modelos</div>
+      <h2 className="pv-title-sm">Locação tradicional <span style={{ color: "var(--ink-faint)", fontWeight: 400 }}>vs.</span> locação por temporada</h2>
+      {comparison ? (
+        <>
+          <div className="pv-vs">
+            <div className="pv-vs-col">
+              <div className="pv-vs-label">Locação tradicional</div>
+              <div className="pv-vs-num">{fmtMoney(comparison.aluguel)}</div>
+            </div>
+            <div className="pv-vs-sep">vs.</div>
+            <div className={`pv-vs-col${comparison.melhor ? " pv-win" : ""}`}>
+              <div className="pv-vs-label">Locação por temporada</div>
+              <div className="pv-vs-num">{fmtMoney(scenarios.provavel.receita)}</div>
+            </div>
+          </div>
+          <div className="pv-note">A receita da locação por temporada depende de fatores operacionais e pode sofrer descontos relacionados a limpeza, manutenção, taxas de plataformas e demais custos da operação. Os valores acima referem-se à receita estimada, não ao resultado líquido.</div>
+        </>
+      ) : (
+        <div className="pv-note">Informe o valor do aluguel tradicional na Análise Rápida para incluir esta comparação na apresentação.</div>
+      )}
+    </div>
+  );
+}
+
+function PvOportunidadeGestao({ texts, setTexts, editable }) {
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Gestão profissional</div>
+      <h2 className="pv-title-sm">Potencial existe. Resultado exige estratégia.</h2>
+      <ul className="pv-list-clean">
+        <li>Posicionamento estratégico do anúncio</li>
+        <li>Precificação dinâmica conforme demanda</li>
+        <li>Atendimento e comunicação com os hóspedes</li>
+        <li>Acompanhamento constante da operação</li>
+        <li>Acompanhamento contínuo de desempenho</li>
+      </ul>
+      <div className="pv-rule-sm" />
+      {editable ? (
+        <textarea className="rmi-textarea" style={{ width: "100%", minHeight: 90, fontSize: 13.5 }} value={texts.gestao} onChange={(e) => setTexts({ ...texts, gestao: e.target.value })} />
+      ) : (
+        <p style={{ fontSize: 13.5, lineHeight: 1.7, color: "var(--ink-soft)" }}>{texts.gestao}</p>
+      )}
+    </div>
+  );
+}
+
+function PvProximoPasso({ texts, setTexts, editable }) {
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Próximo passo</div>
+      <div className="pv-cta">
+        {editable ? (
+          <textarea className="rmi-textarea" style={{ width: "100%", minHeight: 70, fontSize: 18, fontFamily: "Georgia, serif", textAlign: "center", fontStyle: "italic" }} value={texts.proximoPasso} onChange={(e) => setTexts({ ...texts, proximoPasso: e.target.value })} />
+        ) : (
+          <div className="pv-cta-quote">"{texts.proximoPasso}"</div>
+        )}
+        <p className="pv-cta-sub">Estimativa de potencial com base em projeção de mercado para a região. Os valores são projeções e não constituem garantia de receita — o desempenho real depende de fatores como sazonalidade, concorrência, qualidade do anúncio e gestão operacional.</p>
+      </div>
+      <div className="pv-brandmark">Inteligência de Mercado · Locação por Temporada · Maringá / PR</div>
+    </div>
+  );
+}
+
+function PvPilares({ chosenCount }) {
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Base da análise</div>
+      <h2 className="pv-title-sm">Por que este imóvel tem esse potencial?</h2>
+      <div className="pv-pillars">
+        <div className="pv-pillar">
+          <div className="pv-pillar-label">Mercado</div>
+          <div className="pv-pillar-num">{MARKET_REFERENCE.imoveisAnunciados}</div>
+          <div className="pv-pillar-desc">Imóveis anunciados no mercado de locação por temporada em Maringá.</div>
+        </div>
+        <div className="pv-pillar">
+          <div className="pv-pillar-label">Ocupação</div>
+          <div className="pv-pillar-num">{MARKET_REFERENCE.ocupacaoMediaPct}%</div>
+          <div className="pv-pillar-desc">Taxa média de ocupação utilizada como referência de mercado.</div>
+        </div>
+        <div className="pv-pillar">
+          <div className="pv-pillar-label">Comparáveis</div>
+          <div className="pv-pillar-num">{chosenCount}</div>
+          <div className="pv-pillar-desc">Propriedades semelhantes, cadastradas e pesquisadas na região, consideradas nesta análise.</div>
+        </div>
+      </div>
+      <p className="pv-sub" style={{ marginTop: 26 }}>
+        A estimativa considera referências do mercado de Maringá, imóveis anunciados na região, indicadores
+        médios de ocupação e propriedades comparáveis com perfil semelhante.
+      </p>
+    </div>
+  );
+}
+
+/* --------------------------- exclusivos da versão Executiva --------------------------- */
+
+function ExecutivePresentationDoc({ target, result, texts, setTexts, editable }) {
+  return (
+    <div className="pv-doc">
+      <PvResumoExecutivo target={target} result={result} />
+      <PvPotencialFinanceiro result={result} />
+      <PvComparacaoTradicional result={result} />
+      <PvPilares chosenCount={result.chosen.length} />
+      <PvOportunidadeGestao texts={texts} setTexts={setTexts} editable={editable} />
+      <PvProximoPasso texts={texts} setTexts={setTexts} editable={editable} />
+    </div>
+  );
+}
+
+/* --------------------------- exclusivos da versão Detalhada --------------------------- */
+
+function PvMercadoMaringa() {
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Mercado</div>
+      <h2 className="pv-title-sm">Mercado de locação por temporada em Maringá</h2>
+      <div className="pv-hero-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+        <div>
+          <div className="pv-stat-label">Imóveis anunciados na região</div>
+          <div className="pv-stat-num pv-accent">{MARKET_REFERENCE.imoveisAnunciados}</div>
+        </div>
+        <div>
+          <div className="pv-stat-label">Ocupação média de referência</div>
+          <div className="pv-stat-num">{MARKET_REFERENCE.ocupacaoMediaPct}%</div>
+        </div>
+      </div>
+      <p className="pv-sub" style={{ marginTop: 26, maxWidth: 640 }}>
+        Maringá concentra demanda relacionada a negócios, agronegócio, universidades, eventos e visitantes,
+        o que sustenta um mercado ativo de locação por temporada ao longo do ano. Os números acima são
+        referências de mercado utilizadas na análise, não uma garantia de resultado — o desempenho de cada
+        imóvel varia conforme localização, características, preço, concorrência, sazonalidade e gestão.
+      </p>
+    </div>
+  );
+}
+
+function PvComportamentoDemanda() {
+  const fatores = [
+    "Agronegócio e viagens corporativas",
+    "Calendário universitário (matrículas, início e retorno de semestre)",
+    "Eventos e feiras na cidade e região",
+    "Períodos especiais do calendário de Maringá",
+  ];
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Demanda</div>
+      <h2 className="pv-title-sm">Comportamento da demanda</h2>
+      <p className="pv-sub" style={{ maxWidth: 620 }}>
+        O mercado de locação por temporada em Maringá possui demanda distribuída ao longo do ano, movimentada
+        por diferentes fatores — sem depender de um único período de alta temporada.
+      </p>
+      <ul className="pv-list-clean" style={{ marginTop: 20 }}>
+        {fatores.map((f, i) => <li key={i}>{f}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function PvCalendarioOportunidades() {
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Calendário</div>
+      <h2 className="pv-title-sm">Calendário de oportunidades</h2>
+      <p className="pv-sub">Períodos que podem aumentar a demanda na região — não uma garantia de ocupação.</p>
+      <div className="pv-timeline">
+        {OPPORTUNITY_TIMELINE.map((item, i) => (
+          <div className="pv-timeline-item" key={i}>
+            <div className="pv-timeline-when">{item.when}</div>
+            <div>
+              <div className="pv-timeline-what">{item.what}</div>
+              <div className="pv-timeline-desc">{item.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PvAnaliseImovel({ target, result }) {
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">O imóvel</div>
+      <h2 className="pv-title-sm">Análise do imóvel</h2>
+      <div className="pv-hero-grid">
+        <div><div className="pv-stat-label">Tipo</div><div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)" }}>{target.tipo}</div></div>
+        <div><div className="pv-stat-label">Quartos</div><div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)" }}>{target.quartos}</div></div>
+        <div><div className="pv-stat-label">Área</div><div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)" }}>{target.area ? `${target.area} m²` : "—"}</div></div>
+        <div><div className="pv-stat-label">Capacidade</div><div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)" }}>{target.capacidade} hóspede(s)</div></div>
+      </div>
+      <p className="pv-sub" style={{ marginTop: 24, maxWidth: 640 }}>
+        Além da estrutura básica, os diferenciais abaixo reforçam o posicionamento deste imóvel frente à
+        concorrência e ao perfil de hóspede que busca este tipo de estadia em Maringá:
+      </p>
+      <div style={{ marginTop: 14 }}>
+        <PositiveFactorsList target={target} result={result} />
+      </div>
+    </div>
+  );
+}
+
+function PvAnaliseComparaveis({ result }) {
+  const summary = summarizeComparables(result.chosen);
+  const regioes = Object.entries(summary.porRegiao);
+  const padroes = Object.entries(summary.porPadrao);
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Comparáveis</div>
+      <h2 className="pv-title-sm">Análise dos comparáveis</h2>
+      <p className="pv-sub">Esta análise considerou {summary.n} imóveis comparáveis, pesquisados e cadastrados com perfil semelhante ao deste imóvel.</p>
+      <div className="pv-comp-summary">
+        <div><div className="pv-stat-label">Comparáveis analisados</div><div className="pv-stat-num" style={{ fontSize: 28 }}>{summary.n}</div></div>
+        <div><div className="pv-stat-label">Diária mínima</div><div className="pv-stat-num" style={{ fontSize: 22 }}>{summary.min != null ? fmtMoney(summary.min) : "—"}</div></div>
+        <div><div className="pv-stat-label">Diária mediana</div><div className="pv-stat-num pv-accent" style={{ fontSize: 22 }}>{summary.mediana != null ? fmtMoney(summary.mediana) : "—"}</div></div>
+        <div><div className="pv-stat-label">Diária máxima</div><div className="pv-stat-num" style={{ fontSize: 22 }}>{summary.max != null ? fmtMoney(summary.max) : "—"}</div></div>
+      </div>
+      <table className="pv-comp-table">
+        <thead><tr><th>Região</th><th>Comparáveis</th></tr></thead>
+        <tbody>{regioes.map(([r, n]) => <tr key={r}><td>{r}</td><td>{n}</td></tr>)}</tbody>
+      </table>
+      <table className="pv-comp-table">
+        <thead><tr><th>Padrão</th><th>Comparáveis</th></tr></thead>
+        <tbody>{padroes.map(([p, n]) => <tr key={p}><td>{p}</td><td>{n}</td></tr>)}</tbody>
+      </table>
+      {summary.notaMedia != null && <p className="footnote" style={{ marginTop: 14 }}>Nota média observada nos comparáveis: {summary.notaMedia.toFixed(1)}/5</p>}
+    </div>
+  );
+}
+
+function PvGestaoProfissionalDetalhada({ texts, setTexts, editable }) {
+  const elementos = ["Anúncio e apresentação", "Posicionamento estratégico", "Precificação dinâmica", "Atendimento aos hóspedes", "Acompanhamento da operação", "Experiência do hóspede"];
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Gestão</div>
+      <h2 className="pv-title-sm">A importância da gestão profissional</h2>
+      <div className="pv-pillars" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: "14px 26px" }}>
+        {elementos.map((e, i) => (
+          <div key={i} style={{ fontSize: 13, color: "var(--ink)", padding: "10px 0", borderBottom: "1px solid var(--line-soft)" }}>{e}</div>
+        ))}
+      </div>
+      <div className="pv-rule-sm" />
+      {editable ? (
+        <textarea className="rmi-textarea" style={{ width: "100%", minHeight: 90, fontSize: 13.5 }} value={texts.gestao} onChange={(e) => setTexts({ ...texts, gestao: e.target.value })} />
+      ) : (
+        <p style={{ fontSize: 13.5, lineHeight: 1.7, color: "var(--ink-soft)" }}>{texts.gestao}</p>
+      )}
+    </div>
+  );
+}
+
+function PvMetodologia() {
+  const passos = [
+    "Levantamento das características do imóvel",
+    "Seleção de imóveis comparáveis com perfil semelhante",
+    "Aplicação de referências do mercado local",
+    "Aplicação de indicadores médios de ocupação",
+    "Análise do posicionamento do imóvel frente à concorrência",
+  ];
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Metodologia</div>
+      <h2 className="pv-title-sm">Como esta análise foi construída</h2>
+      <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13.5, lineHeight: 2, color: "var(--ink)" }}>
+        {passos.map((p, i) => <li key={i}>{p}</li>)}
+      </ol>
+      <p className="footnote" style={{ marginTop: 20, maxWidth: 600 }}>
+        As referências de mercado utilizadas nesta análise consideram dados públicos de plataformas de
+        hospedagem online e pesquisa direta de imóveis anunciados na região de Maringá/PR.
+      </p>
+    </div>
+  );
+}
+
+function DetailedPresentationDoc({ target, result, texts, setTexts, editable }) {
+  return (
+    <div className="pv-doc">
+      <PvResumoExecutivo target={target} result={result} />
+      <PvPotencialFinanceiro result={result} />
+      <PvMercadoMaringa />
+      <PvComportamentoDemanda />
+      <PvCalendarioOportunidades />
+      <PvAnaliseImovel target={target} result={result} />
+      <PvAnaliseComparaveis result={result} />
+      <PvComparacaoTradicional result={result} />
+      <PvGestaoProfissionalDetalhada texts={texts} setTexts={setTexts} editable={editable} />
+      <PvMetodologia />
+      <PvProximoPasso texts={texts} setTexts={setTexts} editable={editable} />
+    </div>
+  );
+}
+
+function ApresentacaoScreen({ target, result, texts, setTexts, exportRef, formato, setFormato, onExportPdf, exporting }) {
   if (!result || result.empty) {
     return (
       <div>
@@ -1706,90 +2174,31 @@ function ApresentacaoScreen({ target, result, texts, setTexts, exportRef, onExpo
       </div>
     );
   }
-  const { diaria, ocupacao, scenarios, annualProvavel, comparison } = result;
+  const DocComponent = formato === "detalhada" ? DetailedPresentationDoc : ExecutivePresentationDoc;
   return (
     <div>
-      <div className="spread" style={{ marginBottom: 14 }}>
-        <div>
-          <div className="eyebrow">Apresentação ao Proprietário</div>
-          <h1 className="page-title" style={{ fontSize: 24, margin: "2px 0" }}>Material comercial</h1>
-          <p className="page-sub" style={{ marginBottom: 0 }}>Esta visão mostra apenas o que é apropriado compartilhar com o proprietário — sem comparáveis, pesos, custos internos ou comissão.</p>
+      <div className="eyebrow">Apresentação ao Proprietário</div>
+      <h1 className="page-title" style={{ fontSize: 24, margin: "2px 0" }}>Material comercial</h1>
+      <p className="page-sub">Dois formatos prontos para o proprietário, com a mesma identidade visual — sem comparáveis identificados, pesos, custos internos ou comissão.</p>
+
+      <div className="grid g2" style={{ marginBottom: 16 }}>
+        <div className={`pv-format-card${formato === "executiva" ? " active" : ""}`} onClick={() => setFormato("executiva")}>
+          <div className="pv-format-title">Apresentação Executiva</div>
+          <div className="pv-format-desc">Resumo direto do potencial financeiro e da oportunidade do imóvel. Curta e objetiva — ideal para o primeiro contato.</div>
         </div>
-        <button className="btn btn-primary" onClick={onExportPdf} disabled={exporting}>{exporting ? "Gerando PDF…" : "Exportar apresentação (PDF)"}</button>
+        <div className={`pv-format-card${formato === "detalhada" ? " active" : ""}`} onClick={() => setFormato("detalhada")}>
+          <div className="pv-format-title">Análise Detalhada</div>
+          <div className="pv-format-desc">Relatório completo com mercado, demanda, comparáveis, oportunidade e metodologia.</div>
+        </div>
       </div>
 
-      <div ref={exportRef} className="presentation" style={{ background: "var(--paper)" }}>
-        {/* Página 1 — Oportunidade */}
-        <div className="card">
-          <div className="eyebrow">Página 1 · Oportunidade</div>
-          <h2 className="page-title" style={{ fontSize: 26 }}>Potencial de exploração do imóvel</h2>
-          <p className="page-sub" style={{ marginBottom: 4 }}>
-            {target.tipo} · {target.quartos} quarto(s) · {target.area ? `${target.area}m²` : ""} · {target.bairro || target.zona || "Maringá/PR"}
-          </p>
-          <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ink-soft)" }}>
-            Este imóvel apresenta potencial para gerar receita no mercado de locação por temporada em Maringá,
-            com base em uma projeção de mercado para imóveis de perfil semelhante na região.
-          </p>
-        </div>
+      <div className="hstack" style={{ marginBottom: 20 }}>
+        <button className="btn btn-primary" onClick={() => onExportPdf("executiva")} disabled={exporting}>{exporting ? "Gerando PDF…" : "Exportar Apresentação Executiva"}</button>
+        <button className="btn btn-ghost" onClick={() => onExportPdf("detalhada")} disabled={exporting}>{exporting ? "Gerando PDF…" : "Exportar Análise Detalhada"}</button>
+      </div>
 
-        {/* Página 2 — Potencial de receita */}
-        <div className="card">
-          <div className="eyebrow">Página 2 · Potencial de receita</div>
-          <div className="card-title" style={{ marginTop: 6 }}>Diária estimada</div>
-          <RangeBar conservador={diaria.conservador} provavel={diaria.provavel} otimista={diaria.otimista} />
-          <div className="card-title" style={{ marginTop: 18 }}>Ocupação estimada</div>
-          <RangeBar conservador={ocupacao.conservador} provavel={ocupacao.provavel} otimista={ocupacao.otimista} unit="%" />
-          <div className="divider" />
-          <div className="grid g3">
-            <ScenarioCol title="Cenário conservador" s={scenarios.conservador} />
-            <ScenarioCol title="Cenário provável" s={scenarios.provavel} />
-            <ScenarioCol title="Cenário otimista" s={scenarios.otimista} />
-          </div>
-          <div className="divider" />
-          <div className="footnote">Projeção de receita anual (cenário provável): <b style={{ color: "var(--ink)" }}>{fmtMoney(annualProvavel)}</b></div>
-          {comparison && (
-            <>
-              <div className="divider" />
-              <div className="card-title">Comparação com locação tradicional</div>
-              <div className="grid g2">
-                <div><div className="kpi-label">Aluguel tradicional</div><div className="kpi-num" style={{ fontSize: 22 }}>{fmtMoney(comparison.aluguel)}</div></div>
-                <div><div className="kpi-label">Estimativa por temporada</div><div className="kpi-num" style={{ fontSize: 22 }}>{fmtMoney(scenarios.provavel.receita)}</div></div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Página 3 — Por que esse imóvel possui potencial */}
-        <div className="card">
-          <div className="eyebrow">Página 3 · Por que este imóvel tem potencial</div>
-          <div className="card-title" style={{ marginTop: 6 }}>Principais características observadas</div>
-          <PositiveFactorsList target={target} result={result} />
-        </div>
-
-        {/* Página 4 — Oportunidade de gestão profissional (texto editável) */}
-        <div className="card">
-          <div className="eyebrow">Página 4 · Oportunidade de gestão profissional</div>
-          <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ink-soft)", marginTop: 6 }}>
-            Extrair todo o potencial de um imóvel de temporada depende de posicionamento, precificação, apresentação,
-            gestão das reservas, atendimento aos hóspedes e acompanhamento constante do desempenho — tarefas que
-            consomem tempo e exigem atenção contínua.
-          </p>
-          <div className="card-title" style={{ marginTop: 12 }}>O que ofereço como gestor <span style={{ fontWeight: 400, textTransform: "none" }}>(edite este texto livremente)</span></div>
-          <textarea className="rmi-textarea" style={{ width: "100%", minHeight: 90 }} value={texts.gestao}
-            onChange={(e) => setTexts({ ...texts, gestao: e.target.value })} />
-        </div>
-
-        {/* Página 5 — Próximo passo */}
-        <div className="card">
-          <div className="eyebrow">Página 5 · Próximo passo</div>
-          <textarea className="rmi-textarea" style={{ width: "100%", minHeight: 60, fontSize: 16, fontFamily: "Georgia, serif" }} value={texts.proximoPasso}
-            onChange={(e) => setTexts({ ...texts, proximoPasso: e.target.value })} />
-          <p className="footnote" style={{ marginTop: 14 }}>
-            Estimativa de potencial com base em projeção de mercado para a região. Os valores são projeções e não
-            constituem garantia de receita — o desempenho real depende de fatores como sazonalidade, concorrência,
-            qualidade do anúncio e gestão operacional.
-          </p>
-        </div>
+      <div ref={exportRef}>
+        <DocComponent target={target} result={result} texts={texts} setTexts={setTexts} editable />
       </div>
     </div>
   );
@@ -1846,10 +2255,12 @@ export default function App() {
   // --- NOVO: textos editáveis da aba Apresentação (persistidos localmente) ---
   const [apresentacaoTexts, setApresentacaoTextsState] = useState(DEFAULT_APRESENTACAO_TEXTS);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [presFormato, setPresFormato] = useState("executiva"); // executiva | detalhada
+  const [pendingExportKind, setPendingExportKind] = useState(null);
   const presentationExportRef = React.useRef(null);
   useEffect(() => {
     loadJSON("apresentacaoTexts", null).then((saved) => {
-      if (saved) setApresentacaoTextsState(saved);
+      if (saved) setApresentacaoTextsState({ ...DEFAULT_APRESENTACAO_TEXTS, ...saved });
     });
   }, []);
   const setApresentacaoTexts = useCallback((next) => {
@@ -1857,8 +2268,8 @@ export default function App() {
     saveJSON("apresentacaoTexts", next);
   }, []);
 
-  // --- NOVO: exportar apresentação para PDF (usa o conteúdo já filtrado da aba) ---
-  const handleExportPdf = async () => {
+  // --- NOVO: exportar apresentação para PDF, em um dos dois formatos (Executiva / Detalhada) ---
+  const runExportPdf = async (kind) => {
     if (!presentationExportRef.current) return;
     setExportingPdf(true);
     try {
@@ -1882,14 +2293,35 @@ export default function App() {
         pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-      const fname = `Apresentacao_${(target.bairro || target.zona || "imovel").replace(/[^a-zA-Z0-9]+/g, "_")}.pdf`;
-      pdf.save(fname);
+      const base = (target.bairro || target.zona || "imovel").replace(/[^a-zA-Z0-9]+/g, "_");
+      const suffix = kind === "detalhada" ? "Analise_Detalhada" : "Apresentacao_Executiva";
+      pdf.save(`${suffix}_${base}.pdf`);
     } catch (e) {
       window.alert("Não foi possível gerar o PDF neste navegador. Tente novamente ou use Arquivo > Imprimir > Salvar como PDF.");
     } finally {
       setExportingPdf(false);
     }
   };
+  // Troca o formato exibido/exportado e só dispara a captura depois que o
+  // documento correspondente já estiver renderizado na tela (a exportação
+  // sempre usa o mesmo `presentationExportRef`, então precisa aguardar o
+  // React terminar de trocar o conteúdo antes de gerar o PDF).
+  const requestExportPdf = (kind) => {
+    setPresFormato(kind);
+    setPendingExportKind(kind);
+  };
+  useEffect(() => {
+    if (!pendingExportKind) return;
+    let cancelled = false;
+    (async () => {
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (cancelled) return;
+      await runExportPdf(pendingExportKind);
+      if (!cancelled) setPendingExportKind(null);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingExportKind, presFormato]);
 
   // --- NOVO: backup / restauração de dados ---
   const handleExportBackup = () => {
@@ -1971,7 +2403,8 @@ export default function App() {
           {view === "apresentacao" && (
             <ApresentacaoScreen
               target={target} result={result} texts={apresentacaoTexts} setTexts={setApresentacaoTexts}
-              exportRef={presentationExportRef} onExportPdf={handleExportPdf} exporting={exportingPdf}
+              exportRef={presentationExportRef} formato={presFormato} setFormato={setPresFormato}
+              onExportPdf={requestExportPdf} exporting={exportingPdf}
             />
           )}
         </div>
