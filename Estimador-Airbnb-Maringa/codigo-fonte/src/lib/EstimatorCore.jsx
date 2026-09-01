@@ -36,14 +36,18 @@ const ADJUSTMENT_LABELS = {
 };
 
 const DEFAULT_COSTS = {
-  taxaPlataforma: { tipo: "percentual", valor: 3, label: "Taxa da plataforma" },
+  taxaPlataforma: { tipo: "percentual", valor: 4, label: "Taxa da plataforma" },
   limpeza: { tipo: "porCheckout", valor: 100, label: "Limpeza" },
-  lavanderia: { tipo: "porCheckout", valor: 30, label: "Lavanderia" },
-  energia: { tipo: "fixo", valor: 150, label: "Energia" },
+  lavanderia: { tipo: "porCheckout", valor: 35, label: "Lavanderia" },
+  energia: { tipo: "fixo", valor: 250, label: "Energia" },
   internet: { tipo: "fixo", valor: 100, label: "Internet" },
-  manutencao: { tipo: "fixo", valor: 80, label: "Manutenção" },
-  reposicao: { tipo: "fixo", valor: 30, label: "Reposição" },
-  outros: { tipo: "fixo", valor: 0, label: "Outros" },
+  agua: { tipo: "fixo", valor: 90, label: "Água" },
+  gas: { tipo: "fixo", valor: 50, label: "Gás" },
+  iptu: { tipo: "fixo", valor: 75, label: "IPTU" },
+  seguroResidencial: { tipo: "fixo", valor: 30, label: "Seguro residencial" },
+  manutencao: { tipo: "fixo", valor: 120, label: "Manutenção" },
+  reposicao: { tipo: "fixo", valor: 100, label: "Reposição" },
+  imprevistosOperacionais: { tipo: "fixo", valor: 70, label: "Imprevistos operacionais" },
 };
 
 const DEFAULT_SETTINGS = {
@@ -67,7 +71,21 @@ const EMPTY_TARGET = {
   localizacaoMenosConveniente: false, acabamentoSuperior: false,
   imovelAntigo: false, poucasComodidades: false,
   linkAnuncio: "", aluguelTradicional: "", observacoes: "",
+  // NOVO — condomínio e custos específicos do imóvel
+  portaria: "semPortaria", // semPortaria | eletronica | 24h
+  aguaInclusaCondominio: false, gasInclusoCondominio: false,
+  condominioManual: "", usarCondominioManual: false,
 };
+
+// NOVO — normaliza settings carregados do armazenamento local, preenchendo
+// com os novos custos padrão qualquer chave que ainda não exista (ex.: usuários
+// que já tinham "settings" salvos antes desta atualização), sem apagar nenhum
+// valor já personalizado pelo usuário.
+function normalizeSettings(saved) {
+  if (!saved) return DEFAULT_SETTINGS;
+  const costs = { ...DEFAULT_COSTS, ...(saved.costs || {}) };
+  return { ...DEFAULT_SETTINGS, ...saved, costs };
+}
 
 /* =========================================================================
    MATH HELPERS
@@ -197,6 +215,70 @@ function pickComparables(comparables, target, excludedIds, maxN = 8, minScore = 
 }
 
 /* =========================================================================
+   CONDOMÍNIO — estimativa automática por imóvel
+   (NOVO — o condomínio não é um custo fixo global: depende das
+   características do imóvel analisado, por isso vive fora de DEFAULT_COSTS
+   e é calculado individualmente para cada `target`.)
+   ========================================================================= */
+
+function estimateCondominio(target) {
+  const tipo = target.tipo;
+  let valor;
+
+  if (tipo === "Apartamento") {
+    valor = 250;
+    if (target.garagem) valor += 30;
+    if (target.elevador) valor += 50;
+    if (target.academia) valor += 70;
+    if (target.piscina) valor += 100;
+  } else if (tipo === "Kitnet/Studio") {
+    // Tratado como apartamento compacto: base menor, mesmos ajustes
+    // estruturais (exceto garagem, pouco comum nesse perfil).
+    valor = 200;
+    if (target.elevador) valor += 50;
+    if (target.academia) valor += 70;
+    if (target.piscina) valor += 100;
+  } else if (tipo === "Casa de condomínio") {
+    // Casa de condomínio tem taxa própria — não é R$ 0 automático.
+    valor = 250;
+    if (target.garagem) valor += 30;
+    if (target.academia) valor += 70;
+    if (target.piscina) valor += 100;
+  } else if (tipo === "Casa") {
+    // Por enquanto, casas (fora de condomínio) são tratadas sem condomínio.
+    valor = 0;
+  } else {
+    // "Outro" ou tipo não mapeado: lógica conservadora, sem estimativa artificial.
+    valor = 0;
+  }
+
+  if (tipo === "Apartamento" || tipo === "Kitnet/Studio" || tipo === "Casa de condomínio") {
+    switch (target.padrao) {
+      case "Econômico": valor -= 50; break;
+      case "Superior": valor += 100; break;
+      case "Premium": valor += 200; break;
+      default: break;
+    }
+    switch (target.portaria) {
+      case "eletronica": valor += 40; break;
+      case "24h": valor += 200; break;
+      default: break;
+    }
+  }
+
+  return Math.max(0, valor);
+}
+
+// Centraliza a escolha entre a estimativa automática e o valor real informado
+// pelo usuário, para não duplicar essa lógica em nenhum outro lugar do código.
+function getCondominio(target) {
+  if (target.usarCondominioManual && toNum(target.condominioManual, -1) >= 0) {
+    return toNum(target.condominioManual, 0);
+  }
+  return estimateCondominio(target);
+}
+
+/* =========================================================================
    ANALYSIS ENGINE
    ========================================================================= */
 
@@ -269,7 +351,7 @@ function runAnalysis(target, comparables, settings, excludedIds) {
   };
 
   // costs (computed on "provável" scenario, and also for conservador/otimista for completeness)
-  function computeCosts(receita, noitesOcupadas) {
+  function computeCosts(receita, noitesOcupadas, target) {
     const c = settings.costs;
     const checkouts = noitesOcupadas / Math.max(settings.duracaoMediaEstadia, 1);
     const taxaPlataforma = c.taxaPlataforma.tipo === "percentual" ? receita * (c.taxaPlataforma.valor / 100) : toNum(c.taxaPlataforma.valor);
@@ -277,17 +359,28 @@ function runAnalysis(target, comparables, settings, excludedIds) {
     const lavanderia = c.lavanderia.tipo === "porCheckout" ? checkouts * c.lavanderia.valor : toNum(c.lavanderia.valor);
     const energia = toNum(c.energia.valor);
     const internet = toNum(c.internet.valor);
+    // Água e gás: zerados quando já estão inclusos no condomínio, para não cobrar em duplicidade.
+    const agua = target.aguaInclusaCondominio ? 0 : toNum(c.agua.valor);
+    const gas = target.gasInclusoCondominio ? 0 : toNum(c.gas.valor);
+    const condominio = getCondominio(target);
+    const iptu = toNum(c.iptu.valor);
+    const seguroResidencial = toNum(c.seguroResidencial.valor);
     const manutencao = toNum(c.manutencao.valor);
     const reposicao = toNum(c.reposicao.valor);
-    const outros = toNum(c.outros.valor);
-    const total = taxaPlataforma + limpeza + lavanderia + energia + internet + manutencao + reposicao + outros;
-    return { taxaPlataforma, limpeza, lavanderia, energia, internet, manutencao, reposicao, outros, total, checkouts };
+    const imprevistosOperacionais = toNum(c.imprevistosOperacionais.valor);
+    const total = taxaPlataforma + limpeza + lavanderia + energia + internet + agua + gas
+      + condominio + iptu + seguroResidencial + manutencao + reposicao + imprevistosOperacionais;
+    return {
+      taxaPlataforma, limpeza, lavanderia, energia, internet, agua, gas, condominio,
+      iptu, seguroResidencial, manutencao, reposicao, imprevistosOperacionais,
+      total, checkouts,
+    };
   }
 
   const costsByScenario = {
-    conservador: computeCosts(scenarios.conservador.receita, scenarios.conservador.noitesOcupadas),
-    provavel: computeCosts(scenarios.provavel.receita, scenarios.provavel.noitesOcupadas),
-    otimista: computeCosts(scenarios.otimista.receita, scenarios.otimista.noitesOcupadas),
+    conservador: computeCosts(scenarios.conservador.receita, scenarios.conservador.noitesOcupadas, target),
+    provavel: computeCosts(scenarios.provavel.receita, scenarios.provavel.noitesOcupadas, target),
+    otimista: computeCosts(scenarios.otimista.receita, scenarios.otimista.noitesOcupadas, target),
   };
 
   function computeCommission(receita, custosTotal) {
@@ -720,9 +813,39 @@ function QuickAnalysisScreen({ target, setTarget, onAnalyze, comparablesCount })
               <option value="padrao">Padrão</option><option value="superior">Superior</option><option value="inferior">Inferior</option>
             </select>
           </Field>
+          <Field label="Portaria">
+            <select className="rmi-select" value={target.portaria} onChange={(e) => set({ portaria: e.target.value })}>
+              <option value="semPortaria">Sem portaria</option>
+              <option value="eletronica">Portaria eletrônica/remota</option>
+              <option value="24h">Portaria 24 horas</option>
+            </select>
+          </Field>
         </div>
         <div className="divider" />
         <AmenityGrid target={target} setTarget={setTarget} />
+      </div>
+
+      <div className="card">
+        <div className="card-title">Condomínio e custos específicos deste imóvel</div>
+        <div className="grid g2">
+          <div>
+            <label style={{ fontSize: 11.5, color: "var(--ink-soft)", fontWeight: 600, display: "block", marginBottom: 6 }}>Condomínio</label>
+            <div className="pill-toggle" style={{ marginBottom: 8 }}>
+              <button type="button" className={!target.usarCondominioManual ? "active" : ""} onClick={() => set({ usarCondominioManual: false })}>Usar estimativa automática</button>
+              <button type="button" className={target.usarCondominioManual ? "active" : ""} onClick={() => set({ usarCondominioManual: true })}>Informar valor real</button>
+            </div>
+            {target.usarCondominioManual ? (
+              <input type="number" min="0" className="rmi-input" style={{ width: "100%" }} value={target.condominioManual} onChange={(e) => set({ condominioManual: e.target.value })} placeholder="Ex: 420" />
+            ) : (
+              <div className="footnote">Estimado em <b style={{ color: "var(--ink)" }}>{fmtMoney(estimateCondominio(target))}</b>/mês, com base nas características informadas acima. Valor aproximado — o condomínio real pode variar.</div>
+            )}
+          </div>
+          <div>
+            <label style={{ fontSize: 11.5, color: "var(--ink-soft)", fontWeight: 600, display: "block", marginBottom: 6 }}>Água e gás</label>
+            <label className="check-row"><input type="checkbox" checked={!!target.aguaInclusaCondominio} onChange={(e) => set({ aguaInclusaCondominio: e.target.checked })} /> Água inclusa no condomínio</label>
+            <label className="check-row"><input type="checkbox" checked={!!target.gasInclusoCondominio} onChange={(e) => set({ gasInclusoCondominio: e.target.checked })} /> Gás incluso no condomínio</label>
+          </div>
+        </div>
       </div>
 
       <div className="card">
@@ -824,12 +947,36 @@ function ResultPanel({ result, target, settings, onTogglePresentation, onExclude
 
       <div className="card">
         <div className="card-title">Custos e comissão (cenário provável)</div>
-        <div className="grid g4">
+
+        <div className="footnote" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Custos variáveis</div>
+        <div className="grid g3">
           <div><div className="kpi-label">Taxa plataforma</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.taxaPlataforma)}</div></div>
           <div><div className="kpi-label">Limpeza</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.limpeza)}</div></div>
           <div><div className="kpi-label">Lavanderia</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.lavanderia)}</div></div>
-          <div><div className="kpi-label">Outros custos fixos</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.energia + costsByScenario.provavel.internet + costsByScenario.provavel.manutencao + costsByScenario.provavel.reposicao + costsByScenario.provavel.outros)}</div></div>
         </div>
+
+        <div className="divider" />
+
+        <div className="footnote" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Custos mensais</div>
+        <div className="grid g4">
+          <div><div className="kpi-label">Energia</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.energia)}</div></div>
+          <div><div className="kpi-label">Internet</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.internet)}</div></div>
+          <div><div className="kpi-label">Água{target.aguaInclusaCondominio ? " (no condomínio)" : ""}</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.agua)}</div></div>
+          <div><div className="kpi-label">Gás{target.gasInclusoCondominio ? " (no condomínio)" : ""}</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.gas)}</div></div>
+          <div>
+            <div className="kpi-label">Condomínio {target.usarCondominioManual ? "(informado)" : "(estimado)"}</div>
+            <div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.condominio)}</div>
+          </div>
+          <div><div className="kpi-label">IPTU</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.iptu)}</div></div>
+          <div><div className="kpi-label">Seguro residencial</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.seguroResidencial)}</div></div>
+          <div><div className="kpi-label">Manutenção</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.manutencao)}</div></div>
+          <div><div className="kpi-label">Reposição</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.reposicao)}</div></div>
+          <div><div className="kpi-label">Imprevistos operacionais</div><div style={{ fontWeight: 700 }}>{fmtMoney(costsByScenario.provavel.imprevistosOperacionais)}</div></div>
+        </div>
+        {!target.usarCondominioManual && (
+          <div className="footnote" style={{ marginTop: 8 }}>Condomínio estimado com base nas características e estrutura do imóvel. O valor real do condomínio pode variar.</div>
+        )}
+
         <div className="divider" />
         <div className="spread">
           <div className="footnote">Total de custos/mês: <b style={{ color: "var(--ink)" }}>{fmtMoney(costsByScenario.provavel.total)}</b></div>
@@ -1227,6 +1374,9 @@ function ComparableForm({ initial, onSave, onCancel }) {
 function BaseScreen({ comparables, setComparables }) {
   const [editing, setEditing] = useState(null); // null | 'new' | comp object
   const [filter, setFilter] = useState({ zona: "", quartos: "", padrao: "" });
+  // NOVO — seleção em massa para exclusão
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
 
   const filtered = comparables.filter((c) =>
     (!filter.zona || (c.zona || "").toLowerCase().includes(filter.zona.toLowerCase())) &&
@@ -1247,9 +1397,29 @@ function BaseScreen({ comparables, setComparables }) {
   const handleDelete = (id) => {
     if (window.confirm && !window.confirm("Remover este comparável da base?")) return;
     setComparables(comparables.filter((c) => c.id !== id));
+    setSelectedIds((prev) => prev.filter((x) => x !== id));
   };
   const markUpdated = (id) => {
     setComparables(comparables.map((c) => (c.id === id ? { ...c, dataPesquisa: new Date().toISOString().slice(0, 10) } : c)));
+  };
+
+  // NOVO — seleção em massa (respeita os filtros aplicados)
+  const filteredIds = filtered.map((c) => c.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id));
+  const toggleSelectOne = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+  const toggleSelectAllFiltered = () => {
+    setSelectedIds((prev) => {
+      if (allFilteredSelected) return prev.filter((id) => !filteredIds.includes(id));
+      const merged = new Set([...prev, ...filteredIds]);
+      return [...merged];
+    });
+  };
+  const handleBulkDelete = () => {
+    setComparables(comparables.filter((c) => !selectedIds.includes(c.id)));
+    setSelectedIds([]);
+    setConfirmingBulkDelete(false);
   };
 
   return (
@@ -1276,15 +1446,39 @@ function BaseScreen({ comparables, setComparables }) {
             </select>
           </Field>
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="spread" style={{ marginTop: 12 }}>
+            <div className="footnote">{selectedIds.length} comparável(is) selecionado(s)</div>
+            <button className="btn btn-danger-ghost btn-sm" onClick={() => setConfirmingBulkDelete(true)}>
+              🗑 Excluir selecionados ({selectedIds.length})
+            </button>
+          </div>
+        )}
+
+        {confirmingBulkDelete && (
+          <div className="alert-box" style={{ marginTop: 12, alignItems: "center", justifyContent: "space-between" }}>
+            <span>Tem certeza que deseja excluir {selectedIds.length} comparáveis? Esta ação não poderá ser desfeita.</span>
+            <span className="hstack" style={{ flexShrink: 0, marginLeft: 12 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setConfirmingBulkDelete(false)}>Cancelar</button>
+              <button className="btn btn-warm btn-sm" onClick={handleBulkDelete}>Excluir {selectedIds.length} comparáveis</button>
+            </span>
+          </div>
+        )}
+
         <table className="rmi-table" style={{ marginTop: 14 }}>
           <thead>
-            <tr><th>Zona/Rua</th><th>Quartos</th><th>Área</th><th>Padrão</th><th>Diária</th><th>Nota</th><th>Atualizado</th><th></th></tr>
+            <tr>
+              <th style={{ width: 28 }}><input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAllFiltered} /></th>
+              <th>Zona/Rua</th><th>Quartos</th><th>Área</th><th>Padrão</th><th>Diária</th><th>Nota</th><th>Atualizado</th><th></th>
+            </tr>
           </thead>
           <tbody>
             {filtered.map((c) => {
               const age = daysSince(c.dataPesquisa);
               return (
                 <tr key={c.id}>
+                  <td><input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => toggleSelectOne(c.id)} /></td>
                   <td>{c.zona}{c.bairro ? ` · ${c.bairro}` : ""}{c.demo ? " [DEMO]" : ""}</td>
                   <td>{c.quartos}</td>
                   <td>{c.area}m²</td>
@@ -1300,7 +1494,7 @@ function BaseScreen({ comparables, setComparables }) {
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={8} className="footnote" style={{ padding: 16 }}>Nenhum comparável encontrado com esses filtros.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={9} className="footnote" style={{ padding: 16 }}>Nenhum comparável encontrado com esses filtros.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1623,7 +1817,7 @@ export default function App() {
       // Only seed demo data the very first time (key never saved before).
       // If the person has since saved an empty list on purpose, respect that.
       setComparablesState(savedComps !== null ? savedComps : DEMO_COMPARABLES);
-      setSettingsState(savedSettings || DEFAULT_SETTINGS);
+      setSettingsState(normalizeSettings(savedSettings));
       setReady(true);
     })();
   }, []);

@@ -113,6 +113,36 @@ O toggle "Modo Apresentação" que já existia dentro da Análise Rápida
 continua funcionando exatamente como antes — a nova aba "Apresentação" é
 adicional, não uma substituição.
 
+## Atualização: custos operacionais completos + exclusão em massa
+
+Duas melhorias foram adicionadas sobre a estrutura existente, sem alterar
+nada do que já funcionava (login, Base de Comparáveis, Banco de
+Referências, score, cenários, comissão, backup, Apresentação):
+
+**Custos operacionais mais completos**
+- Novos custos configuráveis em Configurações: Água, Gás, IPTU, Seguro
+  residencial e Imprevistos operacionais (além dos que já existiam).
+- **Condomínio estimado automaticamente** por imóvel, com base no tipo,
+  garagem, elevador, academia, piscina, padrão e no novo campo Portaria —
+  ele não é um custo fixo global, porque depende de cada imóvel analisado.
+- Na Análise Rápida, é possível **substituir a estimativa pelo valor real**
+  do condomínio, quando você já souber esse valor.
+- Duas caixas de marcação evitam cobrar água/gás em duplicidade quando já
+  estão inclusos no condomínio.
+- O resultado agora mostra os custos organizados em "Custos variáveis" e
+  "Custos mensais", com o condomínio destacado separadamente.
+- Configurações salvas antes desta atualização continuam funcionando
+  normalmente — os novos custos são preenchidos com os valores padrão na
+  primeira vez que o app abre, sem apagar nada que você já tinha ajustado.
+
+**Exclusão em massa na Base de Comparáveis**
+- Checkbox em cada linha da tabela e um checkbox no cabeçalho para
+  selecionar/desselecionar todos os comparáveis visíveis (respeitando os
+  filtros aplicados).
+- Botão "🗑 Excluir selecionados (X)" aparece só quando há seleção, com
+  confirmação antes de excluir.
+- O botão de excluir individual, por linha, continua funcionando como antes.
+
 ## Configurar o login (Supabase)
 
 1. Crie uma conta/projeto em https://supabase.com (grátis para este uso).
@@ -180,6 +210,22 @@ Ainda assim, recomendo testar você mesmo no seu computador Windows antes
 de usar em uma reunião real com um proprietário, especialmente a
 impressão/exportação do PDF, já que o comportamento pode variar levemente
 entre navegadores (Chrome, Edge, Firefox).
+
+### Sobre a atualização de custos e exclusão em massa
+
+O projeto foi compilado com sucesso (`npm run build`) já com essas
+mudanças. A fórmula de estimativa de condomínio foi conferida
+separadamente contra o cenário de exemplo (apartamento padrão Médio, com
+elevador e academia, sem garagem/piscina/portaria) e o resultado bateu
+exatamente com o esperado: R$ 370/mês. A lógica de migração de
+configurações antigas (`normalizeSettings`) também foi testada
+isoladamente, confirmando que valores já personalizados pelo usuário são
+preservados e que apenas os custos novos (água, gás, IPTU, seguro
+residencial, imprevistos operacionais) são adicionados. Não foi possível
+testar esses fluxos dentro de um navegador real com dados reais neste
+ambiente — teste o cadastro de um imóvel, a alternância entre estimativa
+automática e valor manual do condomínio, e a seleção/exclusão em massa na
+Base de Comparáveis antes de usar em produção.
 
 ### Sobre o login (Supabase)
 
