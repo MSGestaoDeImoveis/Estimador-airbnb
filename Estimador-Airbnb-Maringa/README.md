@@ -143,6 +143,39 @@ Referências, score, cenários, comissão, backup, Apresentação):
   confirmação antes de excluir.
 - O botão de excluir individual, por linha, continua funcionando como antes.
 
+## Atualização: "Estudo de Potencial" — apresentação premium (versão atual)
+
+A aba "Apresentação" foi refeita como um documento único de **6 páginas
+fixas** ("Estudo de Potencial para Locação por Temporada"), com
+identidade visual fiel a uma referência fornecida: fundo off-white,
+verde escuro institucional, tipografia serifada nos títulos, ícones de
+traço fino (sem emojis) e bastante espaço em branco. Substitui a versão
+anterior de "dois formatos" (Executiva/Detalhada) por este documento
+único, mais alinhado ao visual pedido.
+
+**Correção financeira importante:** o destaque principal (capa e os três
+cards de cenário) agora mostra o **resultado líquido estimado do
+proprietário** — a mesma variável `ownerResultByScenario` que o
+`ResultPanel` já usava internamente (receita − custos operacionais −
+comissão) — em vez da receita bruta, que era o que aparecia antes. A
+comparação com aluguel tradicional (página 4) também passou a comparar
+o líquido, não mais a receita bruta, e mostra o resultado honestamente
+mesmo quando a locação tradicional sai na frente (sem manipular os
+números a favor da temporada).
+
+As 6 páginas: (1) capa com foto opcional do imóvel e os 4 indicadores
+principais; (2) três cenários + indicadores de mercado (500+ imóveis,
+65% ocupação, quantidade real de comparáveis usados); (3) calendário de
+oportunidades (Expoingá, Maringá Encantada, calendário universitário);
+(4) comparação com aluguel tradicional + vantagens da temporada; (5)
+por que o imóvel tem esse potencial (checklist); (6) gestão profissional
++ card de contato editável (telefone/WhatsApp).
+
+Um único botão "Exportar apresentação (PDF)" gera as 6 páginas em A4 —
+cada página do estudo vira uma página própria do PDF (evita cortar
+cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
+comparáveis individuais, scores, pesos ou custos internos.
+
 ## Configurar o login (Supabase)
 
 1. Crie uma conta/projeto em https://supabase.com (grátis para este uso).
@@ -210,6 +243,24 @@ Ainda assim, recomendo testar você mesmo no seu computador Windows antes
 de usar em uma reunião real com um proprietário, especialmente a
 impressão/exportação do PDF, já que o comportamento pode variar levemente
 entre navegadores (Chrome, Edge, Firefox).
+
+### Sobre o "Estudo de Potencial" (versão atual)
+
+Desta vez consegui testar de ponta a ponta num navegador real (rodei o
+app localmente com dados de demonstração): gerei uma análise, abri a
+aba Apresentação e exportei o PDF de verdade. Conferi visualmente as 6
+páginas renderizadas na tela e as 6 páginas do PDF gerado, incluindo o
+cenário em que a locação tradicional supera a temporada (a comparação
+mostrou isso honestamente, como pedido) e o cenário sem aluguel
+tradicional informado (mostra um aviso pedindo para preencher o campo,
+em vez de inventar um número). O PDF sai com exatamente 6 páginas A4,
+uma por página do estudo — corrigi um bug em que a primeira versão
+dessa exportação estava gerando só 3 páginas (o conteúdo de duas
+páginas do estudo acabava caindo dentro de uma página do PDF). Ainda
+assim, teste você mesmo com os dados reais de um imóvel antes de usar
+com um proprietário — em especial a foto (ela não é salva no backup
+exportável, junto com Configurações e Base de Comparáveis) e o campo de
+contato da página 6, que fica salvo neste computador até você editar.
 
 ### Sobre a atualização de custos e exclusão em massa
 
