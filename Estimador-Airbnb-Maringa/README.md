@@ -176,6 +176,56 @@ cada página do estudo vira uma página própria do PDF (evita cortar
 cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
 comparáveis individuais, scores, pesos ou custos internos.
 
+## Atualização: identidade MS Gestão de Imóveis, comunicação, código único, histórico e exportações
+
+Atualização pontual sobre a versão anterior do "Estudo de Potencial" —
+não alterou cálculos, cenários, custos, comparáveis, login ou o design
+geral, apenas os itens abaixo:
+
+**Identidade e comunicação no PDF**
+- Logo da MS Gestão de Imóveis, como selo discreto no rodapé das 6
+  páginas (ao lado do número da página).
+- Nome da empresa + código da análise aparecem no rodapé da página 1.
+- Descrição da ocupação (65%) e do "500+" atualizadas para deixar claro
+  que são referências gerais de mercado (com menção discreta à origem —
+  oferta identificada no Airbnb para Maringá), não números do imóvel
+  específico.
+- Onde antes aparecia "líquido estimado para o proprietário", agora
+  aparece "Resultado líquido estimado após custos operacionais e
+  gestão" (resumo, 3 cenários e comparação) — mesma variável
+  `ownerResultByScenario` de sempre, só mudou a comunicação.
+- A locação tradicional agora é rotulada como "Valor mensal bruto
+  estimado", com uma nota explicando que pode ser impactada por
+  vacância, manutenção e reparos (nenhum desconto é aplicado
+  automaticamente sobre ela).
+- A comparação de modelos troca a antiga frase "Até X,Xx mais receita"
+  por um bloco "Potencial adicional estimado", mostrando R$/mês, R$/ano
+  e o percentual — calculados com a precisão interna real (a projeção
+  anual não é só o valor mensal arredondado × 12). Quando a locação
+  tradicional é melhor no cenário, isso é mostrado com a mesma
+  transparência, sem manipular os números.
+- Nota discreta de metodologia na página 6.
+
+**Código único e Histórico de Análises**
+- Cada clique em "Gerar estimativa" cria um código único (formato
+  `MS-AAAAMMDD-XXXX`) e salva um registro no novo item de menu
+  "Histórico de Análises" — com o imóvel, tipo, data e resultados
+  mensal/anual provável daquele momento.
+- No Histórico: busca por código, endereço ou tipo; "recuperar" reabre
+  a análise exatamente como estava (inclusive para reexportar o mesmo
+  PDF); "baixar JSON" exporta aquele registro individualmente.
+- Na Análise Rápida, um novo botão "Importar análise anterior" lê um
+  desses JSONs e preenche o formulário automaticamente (o fluxo normal
+  de analisar continua o mesmo — é só um atalho a mais).
+
+**Exportação e backup da Base de Comparáveis**
+- Novos botões em Base de Comparáveis: "Exportar tudo" e "Exportar
+  selecionados" (reaproveita a seleção já usada na exclusão em massa),
+  em Excel (.xlsx) ou backup JSON.
+- "Importar base (JSON)" valida o arquivo, ignora duplicados (por id) e
+  pede confirmação antes de adicionar os novos comparáveis — nunca
+  sobrescreve nada sem confirmar.
+
 ## Configurar o login (Supabase)
 
 1. Crie uma conta/projeto em https://supabase.com (grátis para este uso).
@@ -244,7 +294,27 @@ de usar em uma reunião real com um proprietário, especialmente a
 impressão/exportação do PDF, já que o comportamento pode variar levemente
 entre navegadores (Chrome, Edge, Firefox).
 
-### Sobre o "Estudo de Potencial" (versão atual)
+### Sobre a atualização de identidade, histórico e exportações (versão atual)
+
+Testei de ponta a ponta num navegador real: gerei uma análise e conferi
+o código único aparecendo na aba Apresentação e no rodapé do PDF junto
+com o logo da MS Gestão de Imóveis (a logo aparece de verdade no PDF
+exportado, não só na tela — conferi ampliando a imagem). Testei a
+comparação nos dois sentidos (temporada melhor e tradicional melhor) e
+o "Potencial adicional estimado" bateu exatamente com o exemplo do seu
+pedido (R$ 211/mês, +70,5%) — inclusive confirmei que o valor anual usa
+a precisão interna (não é o mensal arredondado × 12: deu R$ 2.537, não
+R$ 2.532). Testei a Base de Comparáveis: exportei para Excel (abri o
+arquivo e conferi as 30 linhas com todos os campos), exportei o backup
+em JSON e reimportei no mesmo navegador — confirmou "já existem" sem
+duplicar nada. Testei o Histórico: busca por tipo/endereço/código,
+"recuperar" volta para a Análise Rápida com os dados certos, e "baixar
+JSON" gera um arquivo por análise. O "Importar análise anterior" ainda
+não foi testado com um arquivo real gerado por um usuário (só com o
+formato que a própria ferramenta exporta) — se você editar esse JSON à
+mão antes de importar, teste com cuidado.
+
+### Sobre o "Estudo de Potencial" (versão anterior)
 
 Desta vez consegui testar de ponta a ponta num navegador real (rodei o
 app localmente com dados de demonstração): gerei uma análise, abri a

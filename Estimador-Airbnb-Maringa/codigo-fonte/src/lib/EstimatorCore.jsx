@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { MS_LOGO_DATA_URI } from "./logo.js";
 
 /* =========================================================================
    TOKENS / CONSTANTS
@@ -144,6 +145,22 @@ function weightedPercentile(pairs, p) {
   return sorted[sorted.length - 1].value;
 }
 function uid() { return Math.random().toString(36).slice(2, 10); }
+
+// NOVO — código único por análise, formato MS-YYYYMMDD-XXXX (fácil de
+// pesquisar). Confere contra os códigos já existentes no Histórico e
+// regenera o sufixo em caso de colisão (extremamente raro).
+function generateAnalysisCode(existingCodes) {
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem caracteres ambíguos (0/O, 1/I)
+  let code;
+  do {
+    let suffix = "";
+    for (let i = 0; i < 4; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
+    code = `MS-${ymd}-${suffix}`;
+  } while (existingCodes.includes(code));
+  return code;
+}
 
 /* =========================================================================
    SCORING
@@ -714,7 +731,8 @@ const GlobalStyle = () => (
     .pv-quote-box svg { flex-shrink: 0; color: var(--accent); margin-top: 2px; }
     .pv-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; color: var(--ink-faint); gap: 18px; }
     .pv-footer-texts { display: flex; justify-content: space-between; flex: 1; gap: 18px; }
-    .pv-pagenum { flex-shrink: 0; font-size: 10px; color: var(--ink-faint); font-weight: 600; }
+    .pv-pagenum { flex-shrink: 0; font-size: 10px; color: var(--ink-faint); font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+    .pv-logo-badge { height: 15px; width: auto; opacity: 0.82; display: inline-block; vertical-align: middle; }
     .pv-eyebrow { font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
     .pv-scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
     .pv-scenario { padding: 16px 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); }
@@ -736,6 +754,9 @@ const GlobalStyle = () => (
     .pv-indicator-icon { width: 34px; height: 34px; border-radius: 50%; border: 1.3px solid var(--accent); display: flex; align-items: center; justify-content: center; color: var(--accent); margin-bottom: 10px; }
     .pv-indicator-num { font-family: Georgia, serif; font-size: 24px; color: var(--ink); margin-bottom: 3px; }
     .pv-indicator-desc { font-size: 11px; color: var(--ink-soft); line-height: 1.4; }
+    .pv-indicator-note { font-size: 9px; color: var(--ink-faint); line-height: 1.4; margin-top: 4px; font-style: italic; }
+    .pv-methodology-note { margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--line-soft); font-size: 10px; color: var(--ink-faint); line-height: 1.5; }
+    .pv-methodology-note b { color: var(--ink-soft); font-weight: 700; }
     .pv-cal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 12px; }
     .pv-cal-card { border: 1px solid var(--line); border-radius: 4px; padding: 16px 15px; }
     .pv-cal-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
@@ -774,6 +795,9 @@ const GlobalStyle = () => (
     .pv-next-card .contact { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; color: #fff; }
     .pv-photo-tools { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 12px; color: var(--ink-soft); }
     .pv-photo-tools label.btn-file { border: 1px solid var(--line); border-radius: 3px; padding: 6px 12px; cursor: pointer; font-size: 12px; color: var(--ink); background: var(--paper); }
+    label.btn-file { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 3px; padding: 9px 14px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--paper); }
+    label.btn-file:hover { background: var(--line-soft); }
+    label.btn-file input[type=file] { display: none; }
     .pv-photo-tools input[type=file] { display: none; }
     @media print {
       .pv-page { break-after: page; }
@@ -833,6 +857,7 @@ const NAV_ITEMS = [
   { key: "referencias", num: "03", label: "Banco de Referências" },
   { key: "config", num: "04", label: "Configurações" },
   { key: "apresentacao", num: "05", label: "Apresentação" },
+  { key: "historico", num: "06", label: "Histórico de Análises" },
 ];
 
 function Nav({ view, setView, mobile }) {
@@ -868,8 +893,9 @@ function AmenityGrid({ target, setTarget }) {
   );
 }
 
-function QuickAnalysisScreen({ target, setTarget, onAnalyze, comparablesCount }) {
+function QuickAnalysisScreen({ target, setTarget, onAnalyze, comparablesCount, onImportAnalysis }) {
   const set = (patch) => setTarget({ ...target, ...patch });
+  const importInputRef = React.useRef(null);
   return (
     <div>
       <div className="eyebrow">Modo 2 — Análise Rápida</div>
@@ -971,7 +997,13 @@ function QuickAnalysisScreen({ target, setTarget, onAnalyze, comparablesCount })
         </div>
       </div>
 
-      <button className="btn btn-primary" style={{ marginTop: 6 }} onClick={onAnalyze}>Gerar estimativa →</button>
+      <div className="hstack" style={{ marginTop: 6 }}>
+        <button className="btn btn-primary" onClick={onAnalyze}>Gerar estimativa →</button>
+        <label className="btn-file" style={{ marginBottom: 0 }}>
+          Importar análise anterior
+          <input ref={importInputRef} type="file" accept="application/json" onChange={onImportAnalysis} />
+        </label>
+      </div>
     </div>
   );
 }
@@ -1522,6 +1554,68 @@ function BaseScreen({ comparables, setComparables }) {
     setConfirmingBulkDelete(false);
   };
 
+  // NOVO — exportação da base (tudo ou apenas selecionados) e backup/importação.
+  const downloadBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  const handleExportExcel = async (list) => {
+    if (list.length === 0) { window.alert("Nenhum comparável para exportar."); return; }
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.json_to_sheet(list);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Comparáveis");
+    XLSX.writeFile(wb, `comparaveis-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+  const handleExportJSON = (list) => {
+    if (list.length === 0) { window.alert("Nenhum comparável para exportar."); return; }
+    const backup = {
+      _tipo: "backup-comparaveis-estimador-airbnb-maringa",
+      _versao: 1,
+      exportadoEm: new Date().toISOString(),
+      comparables: list,
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    downloadBlob(blob, `backup-comparaveis-${new Date().toISOString().slice(0, 10)}.json`);
+  };
+  const handleImportBase = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        const imported = Array.isArray(data.comparables) ? data.comparables : (Array.isArray(data) ? data : null);
+        if (!imported) {
+          window.alert("Não foi possível reconhecer este arquivo como um backup de comparáveis.");
+          return;
+        }
+        const existingIds = new Set(comparables.map((c) => c.id));
+        const withIds = imported.map((c) => (c && c.id ? c : { ...c, id: uid() }));
+        const novos = withIds.filter((c) => !existingIds.has(c.id));
+        const duplicados = withIds.length - novos.length;
+        if (novos.length === 0) {
+          window.alert(duplicados > 0 ? "Todos os comparáveis deste arquivo já existem na base atual (nenhum importado)." : "Nenhum comparável válido encontrado neste arquivo.");
+          return;
+        }
+        const msg = `Importar ${novos.length} comparável(is) novo(s) para a base atual?` + (duplicados > 0 ? ` (${duplicados} já existente(s) na base serão ignorados.)` : "");
+        if (!window.confirm(msg)) return;
+        setComparables([...comparables, ...novos]);
+        window.alert(`${novos.length} comparável(is) importado(s) com sucesso.`);
+      } catch (err) {
+        window.alert("Não foi possível ler este arquivo.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   return (
     <div>
       <div className="spread">
@@ -1531,6 +1625,15 @@ function BaseScreen({ comparables, setComparables }) {
           <p className="page-sub">Cadastre aqui os imóveis que você pesquisou no Airbnb. Quanto mais comparáveis por região/perfil, mais confiável fica a estimativa. Recomendado: 10–15 por região.</p>
         </div>
         {editing === null && <button className="btn btn-primary" onClick={() => setEditing("new")}>+ Novo comparável</button>}
+      </div>
+
+      <div className="hstack" style={{ marginBottom: 16, flexWrap: "wrap" }}>
+        <button className="btn btn-ghost btn-sm" onClick={() => handleExportExcel(comparables)}>Exportar tudo (Excel)</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => handleExportJSON(comparables)}>Exportar tudo (backup JSON)</button>
+        <label className="btn-file" style={{ padding: "6px 12px", fontSize: 12, fontWeight: 400 }}>
+          Importar base (JSON)
+          <input type="file" accept="application/json" onChange={handleImportBase} />
+        </label>
       </div>
 
       {editing === "new" && <ComparableForm onSave={handleSave} onCancel={() => setEditing(null)} />}
@@ -1548,11 +1651,15 @@ function BaseScreen({ comparables, setComparables }) {
         </div>
 
         {selectedIds.length > 0 && (
-          <div className="spread" style={{ marginTop: 12 }}>
+          <div className="spread" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
             <div className="footnote">{selectedIds.length} comparável(is) selecionado(s)</div>
-            <button className="btn btn-danger-ghost btn-sm" onClick={() => setConfirmingBulkDelete(true)}>
-              🗑 Excluir selecionados ({selectedIds.length})
-            </button>
+            <span className="hstack">
+              <button className="btn btn-ghost btn-sm" onClick={() => handleExportExcel(comparables.filter((c) => selectedIds.includes(c.id)))}>Exportar selecionados (Excel)</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => handleExportJSON(comparables.filter((c) => selectedIds.includes(c.id)))}>Exportar selecionados (JSON)</button>
+              <button className="btn btn-danger-ghost btn-sm" onClick={() => setConfirmingBulkDelete(true)}>
+                🗑 Excluir selecionados ({selectedIds.length})
+              </button>
+            </span>
           </div>
         )}
 
@@ -1777,12 +1884,18 @@ const DEFAULT_APRESENTACAO_TEXTS = {
   contato: "(44) 99900-0000",
 };
 
+// NOVO — identidade da empresa (usada de forma discreta no rodapé/selo do PDF).
+const COMPANY_NAME = "MS Gestão de Imóveis";
+
 // Referências de mercado fixas, usadas como contexto comercial (não
 // calculadas a partir dos dados do usuário — números de mercado fornecidos
 // para compor a narrativa, sempre como referência, nunca como garantia).
 const MARKET_REFERENCE = {
   imoveisAnunciados: "500+",
+  imoveisAnunciadosDesc: "Anúncios de hospedagem por temporada identificados em Maringá",
+  imoveisAnunciadosFonte: "Referência baseada na oferta identificada na plataforma Airbnb para Maringá.",
   ocupacaoMediaPct: 65,
+  ocupacaoMediaDesc: "Taxa de ocupação utilizada como referência geral de mercado",
 };
 
 const OPPORTUNITY_TIMELINE = [
@@ -1856,14 +1969,17 @@ function PvFooter({ n, left, right }) {
         <span>{left || ""}</span>
         <span>{right || ""}</span>
       </div>
-      <span className="pv-pagenum">{String(n).padStart(2, "0")}</span>
+      <span className="pv-pagenum">
+        <img src={MS_LOGO_DATA_URI} alt="" className="pv-logo-badge" />
+        {String(n).padStart(2, "0")}
+      </span>
     </div>
   );
 }
 
 /* --------------------------------- PÁGINA 1 --------------------------------- */
 
-function PvPagina1({ target, result, photo }) {
+function PvPagina1({ target, result, photo, codigo }) {
   const { diaria, ocupacao, ownerResultByScenario } = result;
   const annualLiquidoProvavel = ownerResultByScenario.provavel * 12;
   return (
@@ -1890,7 +2006,7 @@ function PvPagina1({ target, result, photo }) {
         <div className="pv-stat-cell">
           <div className="pv-stat-label">Resultado mensal estimado</div>
           <div className="pv-stat-num pv-accent">{fmtMoney(ownerResultByScenario.provavel)}</div>
-          <div className="pv-stat-desc">líquido estimado para o proprietário</div>
+          <div className="pv-stat-desc">Resultado líquido estimado após custos operacionais e gestão</div>
         </div>
         <div className="pv-stat-cell">
           <div className="pv-stat-label">Projeção anual estimada</div>
@@ -1904,7 +2020,11 @@ function PvPagina1({ target, result, photo }) {
         <span>Com base no perfil deste imóvel e nas referências de mercado utilizadas na análise, identificamos potencial para exploração através da locação por temporada, com uma estimativa financeira estruturada.</span>
       </div>
 
-      <PvFooter n={1} left={`Estudo elaborado em ${pvFormatDate(new Date())}`} right="Este estudo não constitui garantia de resultado." />
+      <PvFooter
+        n={1}
+        left={`${COMPANY_NAME} · Estudo elaborado em ${pvFormatDate(new Date())}${codigo ? ` · Código ${codigo}` : ""}`}
+        right="Este estudo não constitui garantia de resultado."
+      />
     </div>
   );
 }
@@ -1920,7 +2040,7 @@ function PvScenarioCard({ label, s, ownerResult, featured }) {
       <div className="pv-scenario-row">Ocupação {fmtPct(s.ocupPct)} · {s.noitesOcupadas.toFixed(0)} noites/mês</div>
       <div className="pv-scenario-receita">
         <div className="num">{fmtMoney(ownerResult)}<small> / mês</small></div>
-        <div className="desc">líquido estimado para o proprietário</div>
+        <div className="desc">Resultado líquido estimado após custos operacionais e gestão</div>
       </div>
       <div className="pv-scenario-annual">Projeção anual: {fmtMoney(ownerResult * 12)}</div>
     </div>
@@ -1947,12 +2067,13 @@ function PvPagina2({ result }) {
         <div className="pv-indicator">
           <div className="pv-indicator-icon"><PvIcon name="building" size={16} /></div>
           <div className="pv-indicator-num">{MARKET_REFERENCE.imoveisAnunciados}</div>
-          <div className="pv-indicator-desc">Imóveis anunciados na região</div>
+          <div className="pv-indicator-desc">{MARKET_REFERENCE.imoveisAnunciadosDesc}</div>
+          <div className="pv-indicator-note">{MARKET_REFERENCE.imoveisAnunciadosFonte}</div>
         </div>
         <div className="pv-indicator">
           <div className="pv-indicator-icon"><PvIcon name="percent" size={16} /></div>
           <div className="pv-indicator-num">{MARKET_REFERENCE.ocupacaoMediaPct}%</div>
-          <div className="pv-indicator-desc">Taxa média de ocupação utilizada como referência</div>
+          <div className="pv-indicator-desc">{MARKET_REFERENCE.ocupacaoMediaDesc}</div>
         </div>
         <div className="pv-indicator">
           <div className="pv-indicator-icon"><PvIcon name="chart" size={16} /></div>
@@ -2008,8 +2129,13 @@ function PvPagina3() {
 function PvPagina4({ result }) {
   const { comparison, ownerResultByScenario } = result;
   const liquidoProvavel = ownerResultByScenario.provavel;
-  const multiplo = comparison && comparison.aluguel > 0 ? liquidoProvavel / comparison.aluguel : null;
-  const melhor = comparison ? liquidoProvavel >= comparison.aluguel : null;
+  // Valores internos completos (sem arredondamento) usados no cálculo do
+  // potencial adicional — o arredondamento acontece só na exibição (fmtMoney/fmtPct).
+  const diffMensal = comparison ? liquidoProvavel - comparison.aluguel : null;
+  const diffAnual = diffMensal !== null ? diffMensal * 12 : null;
+  const pctAdicional = comparison && comparison.aluguel > 0 ? (diffMensal / comparison.aluguel) * 100 : null;
+  const melhor = diffMensal !== null ? diffMensal >= 0 : null;
+  const sign = melhor ? "+" : "−";
   return (
     <div className="pv-page">
       <div className="pv-eyebrow">Comparação de modelos</div>
@@ -2021,12 +2147,13 @@ function PvPagina4({ result }) {
             <div className="pv-vs-col">
               <div className="pv-vs-label">Locação tradicional</div>
               <div className="pv-vs-num">{fmtMoney(comparison.aluguel)}<small> / mês</small></div>
+              <div className="pv-vs-caption">Valor mensal bruto estimado da locação tradicional</div>
             </div>
             <div className="pv-vs-sep">vs.</div>
             <div className={`pv-vs-col${melhor ? " pv-win" : ""}`}>
               <div className="pv-vs-label">Locação por temporada</div>
               <div className="pv-vs-num">{fmtMoney(liquidoProvavel)}<small> / mês</small></div>
-              <div className="pv-vs-caption">líquido estimado (cenário provável)</div>
+              <div className="pv-vs-caption">Resultado líquido estimado após custos operacionais e gestão (cenário provável)</div>
             </div>
           </div>
 
@@ -2035,16 +2162,30 @@ function PvPagina4({ result }) {
             <div>
               {melhor ? (
                 <>
-                  <div className="headline">▲ Até {multiplo.toFixed(1)}x mais receita potencial com locação por temporada</div>
-                  <div className="sub">A estimativa pode variar conforme ocupação, precificação, custos operacionais e desempenho do imóvel.</div>
+                  <div className="headline">Potencial adicional estimado</div>
+                  <div className="sub" style={{ fontSize: 12.5, color: "var(--ink)", marginTop: 4 }}>
+                    {sign} {fmtMoney(Math.abs(diffMensal))}/mês {pctAdicional !== null ? `(${sign}${Math.abs(pctAdicional).toFixed(1)}%)` : ""}
+                  </div>
+                  <div className="sub" style={{ fontSize: 12.5, color: "var(--ink)" }}>
+                    {sign} {fmtMoney(Math.abs(diffAnual))}/ano {pctAdicional !== null ? `(${sign}${Math.abs(pctAdicional).toFixed(1)}%)` : ""}
+                  </div>
+                  <div className="sub" style={{ marginTop: 6 }}>A estimativa pode variar conforme ocupação, precificação, custos operacionais e desempenho do imóvel.</div>
                 </>
               ) : (
                 <>
                   <div className="headline">Neste cenário, a locação tradicional apresenta resultado financeiro estimado superior</div>
-                  <div className="sub">A estimativa pode variar conforme ocupação, precificação, custos operacionais e desempenho do imóvel.</div>
+                  <div className="sub" style={{ fontSize: 12.5, color: "var(--ink)", marginTop: 4 }}>
+                    {sign} {fmtMoney(Math.abs(diffMensal))}/mês {pctAdicional !== null ? `(${sign}${Math.abs(pctAdicional).toFixed(1)}%)` : ""} em relação à locação tradicional
+                  </div>
+                  <div className="sub" style={{ marginTop: 6 }}>A estimativa pode variar conforme ocupação, precificação, custos operacionais e desempenho do imóvel.</div>
                 </>
               )}
             </div>
+          </div>
+
+          <div className="pv-indicator-note" style={{ marginTop: 10, fontSize: 10 }}>
+            O valor da locação tradicional é apresentado de forma bruta e pode ser impactado por vacância,
+            manutenção, reparos e outros encargos. O resultado efetivo do proprietário pode variar.
           </div>
         </>
       ) : (
@@ -2088,12 +2229,12 @@ function PvPagina5({ result }) {
         <div className="pv-indicator">
           <div className="pv-indicator-icon"><PvIcon name="building" size={16} /></div>
           <div className="pv-indicator-num">{MARKET_REFERENCE.imoveisAnunciados}</div>
-          <div className="pv-indicator-desc">imóveis anunciados na região</div>
+          <div className="pv-indicator-desc">{MARKET_REFERENCE.imoveisAnunciadosDesc}</div>
         </div>
         <div className="pv-indicator">
           <div className="pv-indicator-icon"><PvIcon name="percent" size={16} /></div>
           <div className="pv-indicator-num">{MARKET_REFERENCE.ocupacaoMediaPct}%</div>
-          <div className="pv-indicator-desc">taxa média utilizada como referência</div>
+          <div className="pv-indicator-desc">{MARKET_REFERENCE.ocupacaoMediaDesc}</div>
         </div>
         <div className="pv-indicator">
           <div className="pv-indicator-icon"><PvIcon name="users" size={16} /></div>
@@ -2161,6 +2302,11 @@ function PvPagina6({ texts, setTexts, editable }) {
         </div>
       </div>
 
+      <div className="pv-methodology-note">
+        <b>Metodologia da análise</b> — estimativas baseadas em referências de mercado, imóveis comparáveis e
+        informações disponíveis em plataformas de hospedagem por temporada.
+      </div>
+
       <PvFooter n={6} left="Este estudo tem caráter informativo e não constitui garantia de resultado." />
     </div>
   );
@@ -2168,10 +2314,10 @@ function PvPagina6({ texts, setTexts, editable }) {
 
 /* --------------------------------- documento completo --------------------------------- */
 
-function PresentacaoPremiumDoc({ target, result, texts, setTexts, photo, editable }) {
+function PresentacaoPremiumDoc({ target, result, texts, setTexts, photo, codigo, editable }) {
   return (
     <div className="pv-doc">
-      <PvPagina1 target={target} result={result} photo={photo} />
+      <PvPagina1 target={target} result={result} photo={photo} codigo={codigo} />
       <PvPagina2 result={result} />
       <PvPagina3 />
       <PvPagina4 result={result} />
@@ -2181,7 +2327,7 @@ function PresentacaoPremiumDoc({ target, result, texts, setTexts, photo, editabl
   );
 }
 
-function ApresentacaoScreen({ target, result, texts, setTexts, photo, setPhoto, exportRef, onExportPdf, exporting }) {
+function ApresentacaoScreen({ target, result, texts, setTexts, photo, setPhoto, codigo, exportRef, onExportPdf, exporting }) {
   const fileInputRef = React.useRef(null);
 
   if (!result || result.empty) {
@@ -2206,7 +2352,10 @@ function ApresentacaoScreen({ target, result, texts, setTexts, photo, setPhoto, 
     <div>
       <div className="eyebrow">Apresentação ao Proprietário</div>
       <h1 className="page-title" style={{ fontSize: 24, margin: "2px 0" }}>Estudo de Potencial para Locação por Temporada</h1>
-      <p className="page-sub">Documento de 6 páginas para o proprietário — o destaque financeiro é o resultado líquido estimado, não a receita bruta. Sem comparáveis identificados, pesos, custos internos ou comissão.</p>
+      <p className="page-sub">
+        Documento de 6 páginas para o proprietário — o destaque financeiro é o resultado líquido estimado, não a receita bruta. Sem comparáveis identificados, pesos, custos internos ou comissão.
+        {codigo && <> Código desta análise: <b style={{ color: "var(--ink)" }}>{codigo}</b>.</>}
+      </p>
 
       <div className="pv-photo-tools">
         <label className="btn-file">
@@ -2221,7 +2370,95 @@ function ApresentacaoScreen({ target, result, texts, setTexts, photo, setPhoto, 
       </div>
 
       <div ref={exportRef}>
-        <PresentacaoPremiumDoc target={target} result={result} texts={texts} setTexts={setTexts} photo={photo} editable />
+        <PresentacaoPremiumDoc target={target} result={result} texts={texts} setTexts={setTexts} photo={photo} codigo={codigo} editable />
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   HISTÓRICO DE ANÁLISES
+   (NOVO — armazena e permite recuperar/buscar/exportar cada análise já
+   gerada, sem alterar o fluxo atual de "Gerar estimativa". Não expõe
+   comparáveis individuais nem dados internos — apenas o que já aparece
+   na Análise Rápida/Apresentação daquele estudo.)
+   ========================================================================= */
+
+function HistoricoScreen({ historico, onRecuperar }) {
+  const [busca, setBusca] = useState("");
+
+  const filtrado = historico.filter((h) => {
+    if (!busca.trim()) return true;
+    const q = busca.trim().toLowerCase();
+    return (
+      h.codigo.toLowerCase().includes(q) ||
+      (h.endereco || "").toLowerCase().includes(q) ||
+      (h.tipo || "").toLowerCase().includes(q)
+    );
+  });
+
+  const handleExportRecord = (h) => {
+    const backup = {
+      _tipo: "analise-estimador-airbnb-maringa",
+      _versao: 1,
+      exportadoEm: new Date().toISOString(),
+      ...h,
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${h.codigo}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div>
+      <div className="eyebrow">Histórico</div>
+      <h1 className="page-title">Histórico de Análises</h1>
+      <p className="page-sub">Todas as análises geradas em "Gerar estimativa" ficam registradas aqui automaticamente, com um código único cada uma. Busque por código, endereço ou tipo do imóvel para recuperar, visualizar ou baixar novamente um estudo.</p>
+
+      <div className="card">
+        <Field label="Buscar por código, endereço ou tipo do imóvel">
+          <input className="rmi-input" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Ex: MS-20260904-A1B2, Zona 07, Apartamento…" />
+        </Field>
+
+        <table className="rmi-table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Código</th><th>Imóvel</th><th>Tipo</th><th>Data</th><th>Resultado mensal provável</th><th>Resultado anual provável</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtrado.map((h) => {
+              const mensal = h.result && h.result.ownerResultByScenario ? h.result.ownerResultByScenario.provavel : null;
+              const anual = mensal !== null ? mensal * 12 : null;
+              const data = new Date(h.criadoEm);
+              return (
+                <tr key={h.codigo}>
+                  <td className="rmi-mono">{h.codigo}</td>
+                  <td>{h.endereco || "—"}</td>
+                  <td>{h.tipo || "—"}</td>
+                  <td>{Number.isNaN(data.getTime()) ? "—" : pvFormatDate(data)}</td>
+                  <td className="rmi-mono">{mensal !== null ? fmtMoney(mensal) : "—"}</td>
+                  <td className="rmi-mono">{anual !== null ? fmtMoney(anual) : "—"}</td>
+                  <td className="hstack">
+                    <button className="link-btn" onClick={() => onRecuperar(h)}>recuperar</button>
+                    <button className="link-btn" onClick={() => handleExportRecord(h)}>baixar JSON</button>
+                  </td>
+                </tr>
+              );
+            })}
+            {filtrado.length === 0 && (
+              <tr><td colSpan={7} className="footnote" style={{ padding: 16 }}>
+                {historico.length === 0 ? "Nenhuma análise gerada ainda. Use \"Gerar estimativa\" na Análise Rápida." : "Nenhuma análise encontrada com essa busca."}
+              </td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -2241,15 +2478,20 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [presentation, setPresentation] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  // NOVO — código único da análise atual + Histórico de Análises (persistido localmente)
+  const [analysisCode, setAnalysisCode] = useState(null);
+  const [historico, setHistoricoState] = useState([]);
 
   useEffect(() => {
     (async () => {
       const savedComps = await loadJSON("comparables", null);
       const savedSettings = await loadJSON("settings", null);
+      const savedHistorico = await loadJSON("historicoAnalises", null);
       // Only seed demo data the very first time (key never saved before).
       // If the person has since saved an empty list on purpose, respect that.
       setComparablesState(savedComps !== null ? savedComps : DEMO_COMPARABLES);
       setSettingsState(normalizeSettings(savedSettings));
+      setHistoricoState(Array.isArray(savedHistorico) ? savedHistorico : []);
       setReady(true);
     })();
   }, []);
@@ -2262,17 +2504,75 @@ export default function App() {
     setSettingsState(next);
     saveJSON("settings", next).then((ok) => { if (!ok) setSaveError(true); });
   }, []);
+  const setHistorico = useCallback((next) => {
+    setHistoricoState(next);
+    saveJSON("historicoAnalises", next).then((ok) => { if (!ok) setSaveError(true); });
+  }, []);
 
   const handleAnalyze = () => {
     setExcludedIds([]);
     const r = runAnalysis(target, comparables, settings, []);
     setResult(r);
     setPresentation(false);
+    // NOVO — cada análise gerada recebe um código único e é registrada no
+    // Histórico (mesmo fluxo de "Gerar estimativa" de sempre, sem nenhuma
+    // etapa extra para quem só quer analisar).
+    setHistorico((prevHistorico) => {
+      const codigo = generateAnalysisCode(prevHistorico.map((h) => h.codigo));
+      setAnalysisCode(codigo);
+      const registro = {
+        codigo,
+        criadoEm: new Date().toISOString(),
+        endereco: target.bairro || target.zona || "",
+        tipo: target.tipo,
+        target,
+        result: r,
+      };
+      const next = [registro, ...prevHistorico];
+      saveJSON("historicoAnalises", next).then((ok) => { if (!ok) setSaveError(true); });
+      return next;
+    });
   };
   const handleExcludeComp = (id) => {
     const nextExcluded = [...excludedIds, id];
     setExcludedIds(nextExcluded);
     setResult(runAnalysis(target, comparables, settings, nextExcluded));
+  };
+
+  // NOVO — recuperar uma análise do Histórico: repõe o imóvel e o resultado
+  // exatamente como estavam no momento em que a análise foi gerada.
+  const handleRecuperarAnalise = (registro) => {
+    setTarget(registro.target);
+    setExcludedIds([]);
+    setResult(registro.result);
+    setAnalysisCode(registro.codigo);
+    setPresentation(false);
+    setView("analise");
+  };
+
+  // NOVO — "Importar análise anterior": preenche o formulário da Análise
+  // Rápida a partir de um JSON exportado (do Histórico ou de uma análise
+  // individual), sem alterar o fluxo normal de análise.
+  const handleImportAnalysis = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        const importedTarget = data && data.target ? data.target : (data && data._tipo === "analise-estimador-airbnb-maringa" ? data.target : null);
+        if (!importedTarget || typeof importedTarget !== "object") {
+          window.alert("Não foi possível reconhecer este arquivo como uma análise exportada por esta ferramenta.");
+          return;
+        }
+        setTarget({ ...EMPTY_TARGET, ...importedTarget });
+        window.alert("Dados da análise importados. Revise os campos e clique em \"Gerar estimativa\" para continuar.");
+      } catch (err) {
+        window.alert("Não foi possível ler este arquivo.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   // --- NOVO: textos editáveis + foto opcional da aba Apresentação (persistidos localmente) ---
@@ -2404,7 +2704,7 @@ export default function App() {
         <div className="rmi-main">
           {view === "analise" && (
             <>
-              <QuickAnalysisScreen target={target} setTarget={setTarget} onAnalyze={handleAnalyze} comparablesCount={comparables.length} />
+              <QuickAnalysisScreen target={target} setTarget={setTarget} onAnalyze={handleAnalyze} comparablesCount={comparables.length} onImportAnalysis={handleImportAnalysis} />
               {result && (
                 <div style={{ marginTop: 28 }}>
                   <ResultPanel result={result} target={target} settings={settings} onTogglePresentation={() => setPresentation(true)} onExcludeComp={handleExcludeComp} excludedIds={excludedIds} />
@@ -2418,10 +2718,11 @@ export default function App() {
           {view === "apresentacao" && (
             <ApresentacaoScreen
               target={target} result={result} texts={apresentacaoTexts} setTexts={setApresentacaoTexts}
-              photo={apresentacaoFoto} setPhoto={setApresentacaoFoto}
+              photo={apresentacaoFoto} setPhoto={setApresentacaoFoto} codigo={analysisCode}
               exportRef={presentationExportRef} onExportPdf={handleExportPdf} exporting={exportingPdf}
             />
           )}
+          {view === "historico" && <HistoricoScreen historico={historico} onRecuperar={handleRecuperarAnalise} />}
         </div>
       </div>
     </div>
