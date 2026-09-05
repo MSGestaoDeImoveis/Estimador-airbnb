@@ -176,6 +176,54 @@ cada página do estudo vira uma página própria do PDF (evita cortar
 cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
 comparáveis individuais, scores, pesos ou custos internos.
 
+## Atualização: marca d'água, logo maior, cabeçalho institucional e nova aba "Parceria com Corretores"
+
+Atualização pontual sobre a versão anterior — não alterou cálculos, design
+geral, cores, tipografia, autenticação nem nenhuma das telas existentes.
+
+**No Estudo de Potencial (PDF do proprietário)**
+- "MS GESTÃO DE IMÓVEIS" agora aparece com destaque no topo da página 1
+  (acima do "Estudo de Potencial"), com a logo ao lado — usando o espaço
+  que já existia, sem criar uma nova capa.
+- Logo do rodapé (selo discreto ao lado do número da página) ficou 2x
+  maior em todas as 6 páginas.
+- Marca d'água "MS GESTÃO DE IMÓVEIS" bem sutil (4% de opacidade,
+  diagonal, central) em todas as páginas — para que o estudo continue
+  identificável como material da MS mesmo se um corretor o repassar
+  adiante. Ajustei a opacidade depois de ver o resultado renderizado (a
+  primeira tentativa, a 5,5%, ficava um pouco mais visível do que o
+  ideal nas áreas mais vazias da página).
+
+**Nova aba: Parceria com Corretores**
+- Aba independente (não altera Análise Rápida, Base de Comparáveis,
+  Histórico, Apresentação, cálculos ou Configurações). Gera um **PDF
+  separado** — a Proposta de Parceria — nunca misturado com o Estudo do
+  proprietário.
+- Formulário com dados do corretor (nome, imobiliária, telefone, e-mail,
+  CRECI opcional), código do parceiro (formato `PAR-0001`, gerado com um
+  clique, contador incremental persistido) e o contato da MS que aparece
+  no PDF (responsável, WhatsApp, e-mail comercial).
+- Simulador de ganhos: quantidade de imóveis × comissão de gestão mensal
+  estimada por imóvel → comissão da MS, participação do parceiro (25%) e
+  potencial em 12 meses — testei com 4 imóveis a R$ 350/mês e conferi
+  R$ 1.400 → R$ 350/mês → R$ 4.200/ano, batendo exatamente com a fórmula
+  pedida.
+- QR Code com destino configurável (nunca uma URL fixa no código) — testei
+  decodificando o QR do PDF gerado e confirmei que aponta exatamente para
+  o link informado no campo.
+- O PDF de Parceria (7 páginas: capa, remuneração de 25% com o exemplo
+  ilustrativo R$ 12.000 → R$ 3.000, simulador, "você não precisa operar"
+  + fluxo da parceria, ferramenta comercial + "monetize a mesma carteira
+  mais de uma vez", oportunidades + benefícios, CTA final com QR Code)
+  reaproveita a mesma identidade visual e o mesmo mecanismo de exportação
+  (uma página do documento = uma página do PDF) já usados no Estudo —
+  criei uma função só para isso (`exportPvPagesToPdf`) e ambos os
+  botões de exportar chamam essa mesma função, em vez de duplicar a
+  lógica de captura/paginação.
+- Não implementei (por não terem sido pedidos agora): dashboard do
+  corretor, portal de parceiros, painel de comissões ou histórico de
+  pagamentos.
+
 ## Atualização: identidade MS Gestão de Imóveis, comunicação, código único, histórico e exportações
 
 Atualização pontual sobre a versão anterior do "Estudo de Potencial" —
@@ -294,7 +342,27 @@ de usar em uma reunião real com um proprietário, especialmente a
 impressão/exportação do PDF, já que o comportamento pode variar levemente
 entre navegadores (Chrome, Edge, Firefox).
 
-### Sobre a atualização de identidade, histórico e exportações (versão atual)
+### Sobre a marca d'água, logo maior e a Parceria com Corretores (versão atual)
+
+Testei tudo num navegador real, incluindo a parte que dá mais margem a
+erro (o PDF de Parceria, inteiramente novo). Preenchi os dados de um
+corretor fictício, gerei o código do parceiro (veio `PAR-0001`), rodei o
+simulador com 4 imóveis a R$ 350/mês e conferi manualmente que R$ 1.400
+→ R$ 350/mês → R$ 4.200/ano batem com a fórmula pedida. Exportei o PDF
+de verdade — 7 páginas, todas revisadas visualmente — e decodifiquei o
+QR Code de dentro do PDF gerado (não só olhei se ele aparecia: usei uma
+ferramenta de leitura de QR Code) para confirmar que ele aponta
+exatamente para o link que coloquei no campo "Destino do QR Code".
+Depois disso rodei de novo os testes da versão anterior (Análise Rápida,
+Histórico, exportação de comparáveis) para garantir que nada quebrou com
+a nova aba — e conferi por comparação direta do código que
+`runAnalysis`, `computeCosts`, `BaseScreen`, `ComparableForm` e todos os
+arquivos de autenticação continuam idênticos aos da entrega anterior. A
+opacidade da marca d'água também foi ajustada depois de eu mesmo achar
+que a primeira versão (5,5%) ficava um pouco mais visível do que deveria
+nas partes mais vazias das páginas — baixei para 4%.
+
+### Sobre a atualização de identidade, histórico e exportações (versão anterior)
 
 Testei de ponta a ponta num navegador real: gerei uma análise e conferi
 o código único aparecendo na aba Apresentação e no rodapé do PDF junto

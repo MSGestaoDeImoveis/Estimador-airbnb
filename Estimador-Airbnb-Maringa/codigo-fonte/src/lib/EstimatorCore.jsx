@@ -704,9 +704,12 @@ const GlobalStyle = () => (
        fiel à referência visual fornecida (6 páginas fixas).
        ===================================================================== */
     .pv-doc { max-width: 700px; margin: 0 auto; background: var(--paper); }
-    .pv-page { position: relative; background: var(--paper); padding: 46px 44px 40px 44px; min-height: 640px; box-sizing: border-box; border-bottom: 10px solid var(--bg); display: flex; flex-direction: column; }
+    .pv-page { position: relative; background-color: var(--paper); background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22300%22%3E%3Ctext%20x%3D%22300%22%20y%3D%22155%22%20font-family%3D%22Georgia%2C%20serif%22%20font-size%3D%2230%22%20letter-spacing%3D%222%22%20fill%3D%22%2317302B%22%20fill-opacity%3D%220.04%22%20text-anchor%3D%22middle%22%20transform%3D%22rotate%28-28%20300%20150%29%22%3EMS%20GEST%C3%83O%20DE%20IM%C3%93VEIS%3C/text%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center 55%; background-size: 480px auto; padding: 46px 44px 40px 44px; min-height: 640px; box-sizing: border-box; border-bottom: 10px solid var(--bg); display: flex; flex-direction: column; }
     .pv-page:last-child { border-bottom: none; }
     .pv-brandrow { display: flex; align-items: center; gap: 8px; color: var(--accent); margin-bottom: 22px; }
+    .pv-company-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .pv-company-logo { height: 40px; width: auto; }
+    .pv-company-header span { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; font-size: 17px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); }
     .pv-brandrow svg { flex-shrink: 0; }
     .pv-brandrow span { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: var(--ink-soft); }
     .pv-title { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; font-size: 30px; line-height: 1.22; color: var(--ink); letter-spacing: -0.01em; margin: 0 0 12px 0; font-weight: 400; }
@@ -732,7 +735,7 @@ const GlobalStyle = () => (
     .pv-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; color: var(--ink-faint); gap: 18px; }
     .pv-footer-texts { display: flex; justify-content: space-between; flex: 1; gap: 18px; }
     .pv-pagenum { flex-shrink: 0; font-size: 10px; color: var(--ink-faint); font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
-    .pv-logo-badge { height: 15px; width: auto; opacity: 0.82; display: inline-block; vertical-align: middle; }
+    .pv-logo-badge { height: 30px; width: auto; opacity: 0.88; display: inline-block; vertical-align: middle; }
     .pv-eyebrow { font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
     .pv-scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
     .pv-scenario { padding: 16px 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); }
@@ -799,6 +802,25 @@ const GlobalStyle = () => (
     label.btn-file:hover { background: var(--line-soft); }
     label.btn-file input[type=file] { display: none; }
     .pv-photo-tools input[type=file] { display: none; }
+    .pv-flow-step { display: grid; grid-template-columns: 30px 1fr; gap: 12px; padding: 10px 0; }
+    .pv-flow-num { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-family: Georgia, serif; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+    .pv-flow-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+    .pv-flow-desc { font-size: 11.5px; color: var(--ink-soft); }
+    .pv-opportunity-item { padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+    .pv-opportunity-item:last-child { border-bottom: none; }
+    .pv-opportunity-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+    .pv-opportunity-desc { font-size: 11.5px; color: var(--ink-soft); line-height: 1.45; }
+    .pv-benefits-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 24px; margin-top: 14px; }
+    .pv-benefit-title { font-size: 12.5px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+    .pv-benefit-desc { font-size: 11px; color: var(--ink-soft); line-height: 1.4; }
+    .pv-cta-contact { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; margin-top: 20px; }
+    .pv-cta-contact-list { font-size: 12.5px; color: var(--ink); line-height: 2; }
+    .pv-cta-contact-list b { color: var(--ink-faint); font-weight: 700; margin-right: 6px; }
+    .pv-qr-box { text-align: center; }
+    .pv-qr-box img { width: 96px; height: 96px; border: 1px solid var(--line); border-radius: 4px; padding: 6px; background: #fff; }
+    .pv-qr-box div { font-size: 9px; color: var(--ink-faint); margin-top: 6px; }
+    .pv-partner-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .pv-sim-result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 14px; }
     @media print {
       .pv-page { break-after: page; }
     }
@@ -858,6 +880,7 @@ const NAV_ITEMS = [
   { key: "config", num: "04", label: "Configurações" },
   { key: "apresentacao", num: "05", label: "Apresentação" },
   { key: "historico", num: "06", label: "Histórico de Análises" },
+  { key: "parceria", num: "07", label: "Parceria com Corretores" },
 ];
 
 function Nav({ view, setView, mobile }) {
@@ -1887,6 +1910,20 @@ const DEFAULT_APRESENTACAO_TEXTS = {
 // NOVO — identidade da empresa (usada de forma discreta no rodapé/selo do PDF).
 const COMPANY_NAME = "MS Gestão de Imóveis";
 
+// NOVO — Parceria com Corretores: config padrão + geração de código do parceiro.
+const DEFAULT_PARCERIA = {
+  corretorNome: "", imobiliaria: "", telefoneCorretor: "", emailCorretor: "", creci: "",
+  responsavelMS: "", whatsappMS: "", emailComercialMS: "",
+  qrDestino: "",
+  codigoParceiro: "",
+  qtdImoveis: 1,
+  comissaoMensalPorImovel: 300,
+};
+
+function generatePartnerCode(contador) {
+  return `PAR-${String(contador).padStart(4, "0")}`;
+}
+
 // Referências de mercado fixas, usadas como contexto comercial (não
 // calculadas a partir dos dados do usuário — números de mercado fornecidos
 // para compor a narrativa, sempre como referência, nunca como garantia).
@@ -1984,6 +2021,10 @@ function PvPagina1({ target, result, photo, codigo }) {
   const annualLiquidoProvavel = ownerResultByScenario.provavel * 12;
   return (
     <div className="pv-page">
+      <div className="pv-company-header">
+        <img src={MS_LOGO_DATA_URI} alt="" className="pv-company-logo" />
+        <span>MS Gestão de Imóveis</span>
+      </div>
       <PvBrandRow label="Estudo de Potencial" />
       <h1 className="pv-title">Estudo de Potencial<br />para Locação por Temporada</h1>
       <div className="pv-meta"><PvIcon name="pin" size={12} />{pvPropertyMeta(target)}</div>
@@ -2465,6 +2506,359 @@ function HistoricoScreen({ historico, onRecuperar }) {
 }
 
 /* =========================================================================
+   PARCERIA COM CORRETORES
+   (NOVO — módulo independente. Não altera Análise Rápida, Base de
+   Comparáveis, Banco de Referências, Histórico, Apresentação, cálculos ou
+   Configurações. Gera um documento de PDF separado — "Proposta de
+   Parceria" — reaproveitando a mesma identidade visual (classes pv-*) e o
+   mesmo mecanismo de exportação (exportPvPagesToPdf) do Estudo de
+   Potencial, sem duplicar essa lógica.)
+   ========================================================================= */
+
+function PvFluxoStep({ n, title, desc }) {
+  return (
+    <div className="pv-flow-step">
+      <div className="pv-flow-num">{n}</div>
+      <div>
+        <div className="pv-flow-title">{title}</div>
+        <div className="pv-flow-desc">{desc}</div>
+      </div>
+    </div>
+  );
+}
+
+function PgParceria1({ config, codigoParceiro }) {
+  return (
+    <div className="pv-page">
+      <div className="pv-company-header">
+        <img src={MS_LOGO_DATA_URI} alt="" className="pv-company-logo" />
+        <span>MS Gestão de Imóveis</span>
+      </div>
+      <div className="pv-eyebrow">Proposta de Parceria</div>
+      <h1 className="pv-title">Parceria com Corretores<br />de Imóveis</h1>
+      {config.corretorNome && (
+        <div className="pv-meta">
+          <PvIcon name="pin" size={12} />
+          Para: {config.corretorNome}{config.imobiliaria ? ` · ${config.imobiliaria}` : ""} — Corretor(a) de imóveis
+        </div>
+      )}
+
+      <div className="pv-quote-box" style={{ marginTop: 20, alignItems: "flex-start" }}>
+        <PvIcon name="star" size={16} />
+        <div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 19, color: "var(--ink)", marginBottom: 8, lineHeight: 1.35 }}>
+            Você indica. Nós operamos. Você recebe.
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.6 }}>
+            Transforme sua carteira de imóveis em uma nova fonte de receita recorrente, sem assumir a operação da locação por temporada.
+          </div>
+        </div>
+      </div>
+
+      <PvFooter n={1} left={`MS Gestão de Imóveis${codigoParceiro ? ` · Código do parceiro ${codigoParceiro}` : ""}`} right="Proposta de parceria comercial." />
+    </div>
+  );
+}
+
+function PgParceria2({ config }) {
+  const comissaoMSExemplo = 12000;
+  const parceiroExemplo = comissaoMSExemplo * 0.25;
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Remuneração</div>
+      <h2 className="pv-title-sm">25% da comissão de gestão</h2>
+      <p className="pv-sub" style={{ maxWidth: "none" }}>
+        O parceiro recebe 25% da comissão de gestão recebida pela MS Gestão de Imóveis sobre o imóvel indicado,
+        durante os primeiros 12 meses de operação.
+      </p>
+
+      <div className="pv-scenario pv-featured" style={{ marginTop: 18, maxWidth: 420 }}>
+        <div className="pv-scenario-tag">Exemplo ilustrativo</div>
+        <div className="pv-scenario-row">Comissão de gestão da MS em 12 meses</div>
+        <div className="pv-scenario-diaria" style={{ marginTop: 2 }}>{fmtMoney(comissaoMSExemplo)}</div>
+        <div className="pv-scenario-receita">
+          <div className="num">{fmtMoney(parceiroExemplo)}</div>
+          <div className="desc">recebidos pelo parceiro — 25% da comissão de gestão</div>
+        </div>
+        <div className="pv-scenario-annual">Pagamento: 12 parcelas de {fmtMoney(parceiroExemplo / 12)}</div>
+      </div>
+      <p className="pv-indicator-note" style={{ marginTop: 10 }}>
+        Exemplo ilustrativo. A remuneração efetiva depende da receita e da comissão de gestão efetivamente geradas pela operação.
+      </p>
+
+      <div className="pv-compare-banner" style={{ marginTop: 24 }}>
+        <PvIcon name="trend" size={18} />
+        <div>
+          <div className="headline">Você não recebe apenas pela indicação</div>
+          <div className="sub">Uma indicação convertida pode gerar participação mensal durante os primeiros 12 meses da operação.</div>
+        </div>
+      </div>
+
+      <PvFooter n={2} />
+    </div>
+  );
+}
+
+function PgParceria3({ config }) {
+  const qtd = Math.max(0, toNum(config.qtdImoveis));
+  const comissaoUnit = Math.max(0, toNum(config.comissaoMensalPorImovel));
+  const comissaoMS = qtd * comissaoUnit;
+  const participacaoParceiro = comissaoMS * 0.25;
+  const potencial12 = participacaoParceiro * 12;
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Simulador de ganhos</div>
+      <h2 className="pv-title-sm">Quanto mais imóveis, maior o potencial</h2>
+      <p className="pv-sub" style={{ maxWidth: "none" }}>
+        Você pode indicar um imóvel ou construir uma carteira de imóveis. O modelo permite escalar o potencial de
+        remuneração conforme aumentam os imóveis convertidos em operação.
+      </p>
+
+      <div className="pv-sim-result-grid">
+        <div>
+          <div className="pv-stat-label">Comissão estimada da MS</div>
+          <div className="pv-stat-num">{fmtMoney(comissaoMS)}<small>/mês</small></div>
+        </div>
+        <div>
+          <div className="pv-stat-label">Participação do parceiro (25%)</div>
+          <div className="pv-stat-num pv-accent">{fmtMoney(participacaoParceiro)}<small>/mês</small></div>
+        </div>
+        <div>
+          <div className="pv-stat-label">Potencial em 12 meses</div>
+          <div className="pv-stat-num">{fmtMoney(potencial12)}</div>
+        </div>
+      </div>
+      <p className="pv-indicator-note" style={{ marginTop: 14 }}>
+        Simulação ilustrativa com base em {qtd} imóvel(is) e {fmtMoney(comissaoUnit)}/mês de comissão de gestão
+        estimada por imóvel. Não representa garantia de resultado — a remuneração efetiva depende da receita e da
+        comissão de gestão efetivamente geradas pela operação.
+      </p>
+
+      <PvFooter n={3} />
+    </div>
+  );
+}
+
+function PgParceria4() {
+  const semOperacao = [
+    "Administrar reservas", "Responder hóspedes", "Controlar calendário", "Fazer precificação",
+    "Cuidar do anúncio", "Acompanhar a operação", "Realizar atendimento", "Administrar a rotina da hospedagem",
+  ];
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Como funciona</div>
+      <h2 className="pv-title-sm">Você não precisa operar</h2>
+      <p className="pv-sub" style={{ maxWidth: "none" }}>A MS Gestão de Imóveis assume a operação da locação por temporada. Isso fica com a gente:</p>
+      <ul className="pv-checklist" style={{ columns: 2 }}>
+        {semOperacao.map((s, i) => <li key={i}><PvIcon name="checkcircle" size={14} />{s}</li>)}
+      </ul>
+
+      <div className="pv-quote-box" style={{ marginTop: 18 }}>
+        <PvIcon name="quote" size={16} />
+        <div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "var(--ink)", marginBottom: 4 }}>Você já tem o relacionamento. Nós temos a operação.</div>
+          <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Transforme oportunidades que já existem na sua carteira em uma nova fonte de receita, sem precisar assumir a complexidade da gestão por temporada.</div>
+        </div>
+      </div>
+
+      <div className="pv-rule" />
+      <div className="pv-market-title" style={{ textAlign: "left" }}>Fluxo da parceria</div>
+      <div style={{ marginTop: 6 }}>
+        <PvFluxoStep n="1" title="Você identifica" desc="Imóvel ou proprietário com potencial." />
+        <PvFluxoStep n="2" title="MS analisa" desc="Estudo de potencial." />
+        <PvFluxoStep n="3" title="Proprietário contrata" desc="MS Gestão de Imóveis assume a operação." />
+        <PvFluxoStep n="4" title="MS opera" desc="Toda a gestão da hospedagem fica conosco." />
+        <PvFluxoStep n="5" title="Você recebe" desc="25% da comissão de gestão durante 12 meses." />
+      </div>
+
+      <PvFooter n={4} />
+    </div>
+  );
+}
+
+function PgParceria5() {
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Ferramenta comercial</div>
+      <h2 className="pv-title-sm">Uma nova ferramenta para sua carteira</h2>
+      <p className="pv-sub" style={{ maxWidth: "none" }}>
+        Use o Estudo de Potencial da MS Gestão de Imóveis para apresentar ao proprietário uma estimativa
+        profissional do potencial de renda do imóvel: diária provável, ocupação estimada, cenários, resultado
+        líquido estimado, projeção anual, comparação com locação tradicional e potencial adicional.
+      </p>
+      <div className="pv-quote-box">
+        <PvIcon name="chart" size={16} />
+        <div style={{ fontSize: 13, color: "var(--ink)" }}>Transforme o potencial de renda do imóvel em argumento comercial.</div>
+      </div>
+
+      <div className="pv-rule" />
+      <div className="pv-market-title" style={{ textAlign: "left" }}>Monetize a mesma carteira mais de uma vez</div>
+      <p className="pv-sub" style={{ maxWidth: "none" }}>
+        Além da comissão tradicional de venda ou locação, um imóvel da sua carteira pode continuar gerando valor
+        após o fechamento, por meio da parceria de gestão.
+      </p>
+      <div className="pv-quote-box">
+        <PvIcon name="swap" size={16} />
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "var(--ink)" }}>Venda o imóvel. Indique a gestão. Continue monetizando o relacionamento.</div>
+      </div>
+
+      <PvFooter n={5} />
+    </div>
+  );
+}
+
+function PgParceria6() {
+  const oportunidades = [
+    { t: "Imóveis à venda", d: "Possibilidade de apresentar o potencial de renda como argumento adicional ao proprietário." },
+    { t: "Imóveis aguardando venda", d: "Avaliar exploração por temporada enquanto o imóvel permanece disponível, quando fizer sentido." },
+    { t: "Imóveis de investidores", d: "Solução complementar para clientes que compraram imóveis com objetivo de geração de renda." },
+    { t: "Imóveis desocupados", d: "Imóveis sem utilização podem ser avaliados para exploração por temporada." },
+    { t: "Novas aquisições", d: "Apresentar aquisição do imóvel + potencial de geração de renda." },
+  ];
+  const beneficios = [
+    { t: "Receita recorrente", d: "Participação durante os primeiros 12 meses." },
+    { t: "25% da comissão de gestão", d: "Participação diretamente relacionada à comissão efetivamente gerada." },
+    { t: "Sem operação", d: "A MS Gestão de Imóveis assume a gestão." },
+    { t: "Potencial de escala", d: "Possibilidade de trabalhar com vários imóveis." },
+    { t: "Ferramenta comercial", d: "Utilização do Estudo de Potencial." },
+    { t: "Baixa complexidade", d: "A estrutura operacional fica com a MS." },
+  ];
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Oportunidades</div>
+      <h2 className="pv-title-sm">Quais imóveis podem gerar oportunidades?</h2>
+      <div>
+        {oportunidades.map((o, i) => (
+          <div className="pv-opportunity-item" key={i}>
+            <div className="pv-opportunity-title">{o.t}</div>
+            <div className="pv-opportunity-desc">{o.d}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="pv-rule" />
+      <div className="pv-market-title" style={{ textAlign: "left" }}>Por que ser parceiro da MS?</div>
+      <div className="pv-benefits-grid">
+        {beneficios.map((b, i) => (
+          <div key={i}>
+            <div className="pv-benefit-title">{b.t}</div>
+            <div className="pv-benefit-desc">{b.d}</div>
+          </div>
+        ))}
+      </div>
+
+      <PvFooter n={6} />
+    </div>
+  );
+}
+
+function PgParceria7({ config, qrDataUrl }) {
+  return (
+    <div className="pv-page">
+      <div className="pv-eyebrow">Próximo passo</div>
+      <h2 className="pv-title-sm">Vamos construir essa parceria?</h2>
+      <p className="pv-sub" style={{ maxWidth: "none" }}>Você cuida do relacionamento. A MS Gestão de Imóveis cuida da operação.</p>
+
+      <div className="pv-cta-contact">
+        <div className="pv-cta-contact-list">
+          <div><b>MS Gestão de Imóveis</b></div>
+          {config.responsavelMS && <div><b>Responsável</b>{config.responsavelMS}</div>}
+          {config.whatsappMS && <div><b>WhatsApp</b>{config.whatsappMS}</div>}
+          {config.emailComercialMS && <div><b>E-mail</b>{config.emailComercialMS}</div>}
+        </div>
+        {qrDataUrl && (
+          <div className="pv-qr-box">
+            <img src={qrDataUrl} alt="QR Code" />
+            <div>Fale conosco</div>
+          </div>
+        )}
+      </div>
+
+      <PvFooter n={7} left="Este material tem caráter informativo e não constitui garantia de resultado." />
+    </div>
+  );
+}
+
+function PropostaParceriaDoc({ config, codigoParceiro, qrDataUrl }) {
+  return (
+    <div className="pv-doc">
+      <PgParceria1 config={config} codigoParceiro={codigoParceiro} />
+      <PgParceria2 config={config} />
+      <PgParceria3 config={config} />
+      <PgParceria4 />
+      <PgParceria5 />
+      <PgParceria6 />
+      <PgParceria7 config={config} qrDataUrl={qrDataUrl} />
+    </div>
+  );
+}
+
+function ParceriaScreen({ config, setConfig, onGerarCodigo, onExportPdf, exporting, qrDataUrl, exportRef }) {
+  const set = (patch) => setConfig({ ...config, ...patch });
+  const qtd = Math.max(0, toNum(config.qtdImoveis));
+  const comissaoUnit = Math.max(0, toNum(config.comissaoMensalPorImovel));
+  const comissaoMS = qtd * comissaoUnit;
+  const participacaoParceiro = comissaoMS * 0.25;
+  const potencial12 = participacaoParceiro * 12;
+
+  return (
+    <div>
+      <div className="eyebrow">Ferramenta Comercial</div>
+      <h1 className="page-title">Parceria com Corretores</h1>
+      <p className="page-sub">Gere uma Proposta de Parceria personalizada, em PDF, para apresentar a um corretor ou imobiliária — documento separado do Estudo de Potencial do proprietário.</p>
+
+      <div className="card">
+        <div className="card-title">Dados do corretor</div>
+        <div className="pv-partner-form-grid">
+          <Field label="Nome do corretor"><input className="rmi-input" value={config.corretorNome} onChange={(e) => set({ corretorNome: e.target.value })} /></Field>
+          <Field label="Imobiliária"><input className="rmi-input" value={config.imobiliaria} onChange={(e) => set({ imobiliaria: e.target.value })} /></Field>
+          <Field label="Telefone"><input className="rmi-input" value={config.telefoneCorretor} onChange={(e) => set({ telefoneCorretor: e.target.value })} /></Field>
+          <Field label="E-mail"><input className="rmi-input" value={config.emailCorretor} onChange={(e) => set({ emailCorretor: e.target.value })} /></Field>
+          <Field label="CRECI (opcional)"><input className="rmi-input" value={config.creci} onChange={(e) => set({ creci: e.target.value })} /></Field>
+          <Field label="Código do parceiro">
+            <div className="hstack">
+              <input className="rmi-input" value={config.codigoParceiro} onChange={(e) => set({ codigoParceiro: e.target.value })} placeholder="Ex: PAR-0001" />
+              <button className="btn btn-ghost btn-sm" type="button" onClick={onGerarCodigo}>Gerar</button>
+            </div>
+          </Field>
+        </div>
+
+        <div className="divider" />
+        <div className="card-title">Contato da MS Gestão de Imóveis (aparece no PDF)</div>
+        <div className="pv-partner-form-grid">
+          <Field label="Responsável pela MS"><input className="rmi-input" value={config.responsavelMS} onChange={(e) => set({ responsavelMS: e.target.value })} /></Field>
+          <Field label="WhatsApp"><input className="rmi-input" value={config.whatsappMS} onChange={(e) => set({ whatsappMS: e.target.value })} /></Field>
+          <Field label="E-mail comercial"><input className="rmi-input" value={config.emailComercialMS} onChange={(e) => set({ emailComercialMS: e.target.value })} /></Field>
+          <Field label="Destino do QR Code (link do WhatsApp, site, etc.)"><input className="rmi-input" value={config.qrDestino} onChange={(e) => set({ qrDestino: e.target.value })} placeholder="https://wa.me/55..." /></Field>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">Simulador de ganhos do corretor</div>
+        <div className="grid g2">
+          <Field label="Quantidade de imóveis"><input type="number" min="0" className="rmi-input" value={config.qtdImoveis} onChange={(e) => set({ qtdImoveis: e.target.value })} /></Field>
+          <Field label="Comissão de gestão mensal estimada por imóvel (R$)"><input type="number" min="0" className="rmi-input" value={config.comissaoMensalPorImovel} onChange={(e) => set({ comissaoMensalPorImovel: e.target.value })} /></Field>
+        </div>
+        <div className="pv-sim-result-grid" style={{ marginTop: 14 }}>
+          <div><div className="kpi-label">Comissão estimada da MS</div><div style={{ fontWeight: 700 }}>{fmtMoney(comissaoMS)}/mês</div></div>
+          <div><div className="kpi-label">Participação do parceiro (25%)</div><div style={{ fontWeight: 700, color: "var(--accent)" }}>{fmtMoney(participacaoParceiro)}/mês</div></div>
+          <div><div className="kpi-label">Potencial em 12 meses</div><div style={{ fontWeight: 700 }}>{fmtMoney(potencial12)}</div></div>
+        </div>
+        <p className="footnote" style={{ marginTop: 10 }}>Simulação ilustrativa — não representa garantia de resultado.</p>
+      </div>
+
+      <div className="hstack" style={{ marginBottom: 20 }}>
+        <button className="btn btn-primary" onClick={onExportPdf} disabled={exporting}>{exporting ? "Gerando PDF…" : "Exportar Proposta de Parceria (PDF)"}</button>
+      </div>
+
+      <div ref={exportRef}>
+        <PropostaParceriaDoc config={config} codigoParceiro={config.codigoParceiro} qrDataUrl={qrDataUrl} />
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
    ROOT APP
    ========================================================================= */
 
@@ -2597,40 +2991,98 @@ export default function App() {
     saveJSON("apresentacaoFoto", next);
   }, []);
 
+  // --- NOVO: Parceria com Corretores (módulo independente, persistido à parte) ---
+  const [parceriaConfig, setParceriaConfigState] = useState(DEFAULT_PARCERIA);
+  const [parceiroContador, setParceiroContador] = useState(0);
+  const [parceriaQrDataUrl, setParceriaQrDataUrl] = useState(null);
+  const [exportingParceriaPdf, setExportingParceriaPdf] = useState(false);
+  const parceriaExportRef = React.useRef(null);
+  useEffect(() => {
+    loadJSON("parceriaConfig", null).then((saved) => {
+      if (saved) setParceriaConfigState({ ...DEFAULT_PARCERIA, ...saved });
+    });
+    loadJSON("parceiroContador", 0).then((saved) => setParceiroContador(saved || 0));
+  }, []);
+  const setParceriaConfig = useCallback((next) => {
+    setParceriaConfigState(next);
+    saveJSON("parceriaConfig", next);
+  }, []);
+  const handleGerarCodigoParceiro = () => {
+    setParceiroContador((prev) => {
+      const novoContador = prev + 1;
+      saveJSON("parceiroContador", novoContador);
+      setParceriaConfig({ ...parceriaConfig, codigoParceiro: generatePartnerCode(novoContador) });
+      return novoContador;
+    });
+  };
+  // Gera o QR Code (destino configurável, nunca uma URL fixa) sempre que o
+  // campo mudar — usa a mesma técnica de import dinâmico já usada para
+  // html2canvas/jsPDF/xlsx, sem carregar a biblioteca até ser necessário.
+  useEffect(() => {
+    let cancelled = false;
+    if (!parceriaConfig.qrDestino || !parceriaConfig.qrDestino.trim()) {
+      setParceriaQrDataUrl(null);
+      return;
+    }
+    import("qrcode").then((QRCode) => {
+      if (cancelled) return;
+      QRCode.toDataURL(parceriaConfig.qrDestino.trim(), { margin: 1, width: 240 })
+        .then((url) => { if (!cancelled) setParceriaQrDataUrl(url); })
+        .catch(() => { if (!cancelled) setParceriaQrDataUrl(null); });
+    });
+    return () => { cancelled = true; };
+  }, [parceriaConfig.qrDestino]);
+  const handleExportParceriaPdf = async () => {
+    if (!parceriaExportRef.current) return;
+    setExportingParceriaPdf(true);
+    try {
+      const base = (parceriaConfig.corretorNome || "corretor").replace(/[^a-zA-Z0-9]+/g, "_");
+      await exportPvPagesToPdf(parceriaExportRef.current, `Proposta_Parceria_${base}.pdf`);
+    } catch (e) {
+      window.alert("Não foi possível gerar o PDF neste navegador. Tente novamente ou use Arquivo > Imprimir > Salvar como PDF.");
+    } finally {
+      setExportingParceriaPdf(false);
+    }
+  };
+
+  // --- NOVO: helper reaproveitado pela exportação do Estudo de Potencial e da
+  // Proposta de Parceria — captura cada página (.pv-page) individualmente e a
+  // coloca em uma página de PDF própria (evita cortar cards ao meio, o que
+  // aconteceria se o documento inteiro fosse capturado como uma única imagem e
+  // fatiado por altura de pixel).
+  async function exportPvPagesToPdf(containerEl, filename) {
+    const html2canvas = (await import("html2canvas")).default;
+    const { jsPDF } = await import("jspdf");
+    const pageNodes = containerEl.querySelectorAll(".pv-page");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    for (let i = 0; i < pageNodes.length; i++) {
+      const canvas = await html2canvas(pageNodes[i], { scale: 2, backgroundColor: "#FFFFFF" });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const imgHeightAtFullWidth = (canvas.height * pageWidth) / canvas.width;
+      if (i > 0) pdf.addPage();
+      if (imgHeightAtFullWidth <= pageHeight) {
+        pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeightAtFullWidth);
+      } else {
+        // Página com mais conteúdo do que cabe numa folha A4 em escala 1:1:
+        // reduz proporcionalmente para caber inteira, em vez de cortar.
+        const scale = pageHeight / imgHeightAtFullWidth;
+        const w = pageWidth * scale;
+        const offsetX = (pageWidth - w) / 2;
+        pdf.addImage(imgData, "JPEG", offsetX, 0, w, pageHeight);
+      }
+    }
+    pdf.save(filename);
+  }
+
   // --- NOVO: exportar o Estudo de Potencial (6 páginas) para PDF ---
-  // Captura cada página (.pv-page) individualmente e a coloca em uma página
-  // de PDF própria — evita cortar cards ao meio, o que aconteceria se o
-  // documento inteiro fosse capturado como uma única imagem e fatiado por
-  // altura de pixel (uma página do estudo podia acabar dividida entre duas
-  // páginas do PDF, ou duas páginas do estudo caberem numa só).
   const handleExportPdf = async () => {
     if (!presentationExportRef.current) return;
     setExportingPdf(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
-      const pageNodes = presentationExportRef.current.querySelectorAll(".pv-page");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      for (let i = 0; i < pageNodes.length; i++) {
-        const canvas = await html2canvas(pageNodes[i], { scale: 2, backgroundColor: "#FFFFFF" });
-        const imgData = canvas.toDataURL("image/jpeg", 0.92);
-        const imgHeightAtFullWidth = (canvas.height * pageWidth) / canvas.width;
-        if (i > 0) pdf.addPage();
-        if (imgHeightAtFullWidth <= pageHeight) {
-          pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, imgHeightAtFullWidth);
-        } else {
-          // Página com mais conteúdo do que cabe numa folha A4 em escala 1:1:
-          // reduz proporcionalmente para caber inteira, em vez de cortar.
-          const scale = pageHeight / imgHeightAtFullWidth;
-          const w = pageWidth * scale;
-          const offsetX = (pageWidth - w) / 2;
-          pdf.addImage(imgData, "JPEG", offsetX, 0, w, pageHeight);
-        }
-      }
       const base = (target.bairro || target.zona || "imovel").replace(/[^a-zA-Z0-9]+/g, "_");
-      pdf.save(`Estudo_de_Potencial_${base}.pdf`);
+      await exportPvPagesToPdf(presentationExportRef.current, `Estudo_de_Potencial_${base}.pdf`);
     } catch (e) {
       window.alert("Não foi possível gerar o PDF neste navegador. Tente novamente ou use Arquivo > Imprimir > Salvar como PDF.");
     } finally {
@@ -2723,6 +3175,13 @@ export default function App() {
             />
           )}
           {view === "historico" && <HistoricoScreen historico={historico} onRecuperar={handleRecuperarAnalise} />}
+          {view === "parceria" && (
+            <ParceriaScreen
+              config={parceriaConfig} setConfig={setParceriaConfig} onGerarCodigo={handleGerarCodigoParceiro}
+              onExportPdf={handleExportParceriaPdf} exporting={exportingParceriaPdf}
+              qrDataUrl={parceriaQrDataUrl} exportRef={parceriaExportRef}
+            />
+          )}
         </div>
       </div>
     </div>
