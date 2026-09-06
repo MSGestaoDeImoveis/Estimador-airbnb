@@ -176,6 +176,54 @@ cada página do estudo vira uma página própria do PDF (evita cortar
 cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
 comparáveis individuais, scores, pesos ou custos internos.
 
+## Atualização: proposta de parceria mais persuasiva + correção do espaçamento vertical do PDF
+
+Atualização pontual sobre a Proposta de Parceria — mesma identidade
+visual, mesmas 7 páginas, mesmos cálculos e regra de remuneração
+(25% da comissão de gestão, 12 meses). Não tocou no Estudo de Potencial,
+Histórico, Base de Comparáveis, Configurações ou autenticação.
+
+**Causa técnica do espaço vazio e do rodapé "subido" — encontrada e corrigida**
+O problema não era a posição da logo. O documento (`.pv-doc`) tem 700px
+de largura, mas cada página (`.pv-page`) só tinha `min-height: 640px` —
+bem abaixo da altura que uma folha A4 nessa largura precisa (700 × 297/210
+= 990px). Na exportação, cada página é capturada e colocada numa folha
+A4 do PDF; como a imagem capturada era mais "baixa" que a proporção do
+A4, ela ficava só no topo da folha, sobrando papel em branco embaixo — e
+por tabela, o rodapé (que já ficava corretamente no fim do conteúdo)
+parecia "subido" em relação à folha inteira. Corrigi ajustando essa
+altura mínima para 990px (a proporção correta de A4 para essa largura),
+sem tocar em nenhuma outra regra de layout, cor ou tipografia. Não reduzi
+fontes nem espaçamentos para "mascarar" o problema — o respiro visual
+das páginas continua o mesmo; só a altura da página ficou correta.
+
+**Melhorias de comunicação na Proposta de Parceria (mesmas 7 páginas)**
+- Página 2: adicionei a frase de reforço "A cada R$ 1.000 de comissão de
+  gestão gerada pela MS, R$ 250 correspondem à participação do parceiro."
+- Página 3: adicionei a tabela "Transforme indicações em uma carteira de
+  receita" (1/3/5/10 imóveis → comissão da MS → participação do parceiro,
+  todos exatamente 25% da comissão), ao lado do simulador interativo que
+  já existia — nenhuma página nova foi criada.
+- Página 4: adicionei "Seu papel termina na indicação e no
+  relacionamento. A operação fica com a MS."
+- Página 5: adicionei a provocação "E se a venda não fosse o último
+  momento em que você ganha com esse cliente?" e "Você já construiu a
+  carteira — agora ela pode gerar mais valor."
+- Página 6: título alterado para "Olhe para sua carteira com outros
+  olhos" (era "Quais imóveis podem gerar oportunidades?"), com a frase
+  de apoio "Você provavelmente já conhece imóveis que podem se encaixar
+  nesse modelo." — todas as 5 categorias e os 6 benefícios continuam lá.
+- Página 7: título do CTA alterado para "Tem um imóvel em mente? Envie
+  para a MS." (era "Vamos construir essa parceria?"), com "Nós avaliamos
+  o potencial da oportunidade e orientamos os próximos passos."
+- QR Code: quando o destino configurado é um link de WhatsApp
+  (`wa.me` ou `api.whatsapp.com`) sem mensagem definida, o código agora
+  abre a conversa já com a mensagem "Olá, Emanuel! Quero conhecer a
+  parceria com a MS Gestão de Imóveis. Tenho um imóvel em mente para
+  indicar." pré-preenchida — decodifiquei o QR do PDF gerado para
+  confirmar. Qualquer outro destino (site, e-mail) continua indo
+  exatamente para o link configurado, sem essa mensagem.
+
 ## Atualização: marca d'água, logo maior, cabeçalho institucional e nova aba "Parceria com Corretores"
 
 Atualização pontual sobre a versão anterior — não alterou cálculos, design
@@ -342,7 +390,27 @@ de usar em uma reunião real com um proprietário, especialmente a
 impressão/exportação do PDF, já que o comportamento pode variar levemente
 entre navegadores (Chrome, Edge, Firefox).
 
-### Sobre a marca d'água, logo maior e a Parceria com Corretores (versão atual)
+### Sobre a proposta de parceria mais persuasiva e a correção de espaçamento (versão atual)
+
+Testei igual às vezes anteriores: naveguei até a Parceria com Corretores,
+preenchi os dados de um corretor fictício, rodei o simulador (4 imóveis
+a R$ 350/mês) e exportei o PDF de verdade. Conferi as 7 páginas uma por
+uma comparando com o antes/depois — a tabela da página 3 bateu
+exatamente com os valores pedidos (1→R$175, 3→R$525, 5→R$875,
+10→R$1.750, todos 25% da comissão de gestão). Decodifiquei o QR Code de
+dentro do PDF gerado e confirmei que ele abre o WhatsApp já com a
+mensagem pré-preenchida completa e correta. Sobre o espaçamento: depois
+de investigar (sem presumir a causa de antemão, como pedido), encontrei
+que a altura mínima da página estava abaixo da proporção real de uma
+folha A4 — corrigi isso e as 7 páginas do PDF de Parceria e as 6 páginas
+do Estudo de Potencial agora preenchem a folha A4 corretamente, com o
+rodapé sempre ancorado no mesmo lugar. Rodei de novo os testes da
+Análise Rápida, Histórico e exportação de comparáveis para confirmar que
+nada quebrou, e comparei o código diretamente: `runAnalysis` ficou
+byte a byte idêntico ao da entrega anterior, e a única mudança na região
+de estilos foi essa correção de altura mais a tabela nova da página 3.
+
+### Sobre a marca d'água, logo maior e a Parceria com Corretores (versão anterior)
 
 Testei tudo num navegador real, incluindo a parte que dá mais margem a
 erro (o PDF de Parceria, inteiramente novo). Preenchi os dados de um

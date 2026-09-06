@@ -704,7 +704,7 @@ const GlobalStyle = () => (
        fiel à referência visual fornecida (6 páginas fixas).
        ===================================================================== */
     .pv-doc { max-width: 700px; margin: 0 auto; background: var(--paper); }
-    .pv-page { position: relative; background-color: var(--paper); background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22300%22%3E%3Ctext%20x%3D%22300%22%20y%3D%22155%22%20font-family%3D%22Georgia%2C%20serif%22%20font-size%3D%2230%22%20letter-spacing%3D%222%22%20fill%3D%22%2317302B%22%20fill-opacity%3D%220.04%22%20text-anchor%3D%22middle%22%20transform%3D%22rotate%28-28%20300%20150%29%22%3EMS%20GEST%C3%83O%20DE%20IM%C3%93VEIS%3C/text%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center 55%; background-size: 480px auto; padding: 46px 44px 40px 44px; min-height: 640px; box-sizing: border-box; border-bottom: 10px solid var(--bg); display: flex; flex-direction: column; }
+    .pv-page { position: relative; background-color: var(--paper); background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22300%22%3E%3Ctext%20x%3D%22300%22%20y%3D%22155%22%20font-family%3D%22Georgia%2C%20serif%22%20font-size%3D%2230%22%20letter-spacing%3D%222%22%20fill%3D%22%2317302B%22%20fill-opacity%3D%220.04%22%20text-anchor%3D%22middle%22%20transform%3D%22rotate%28-28%20300%20150%29%22%3EMS%20GEST%C3%83O%20DE%20IM%C3%93VEIS%3C/text%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center 55%; background-size: 480px auto; padding: 46px 44px 40px 44px; min-height: 990px; box-sizing: border-box; border-bottom: 10px solid var(--bg); display: flex; flex-direction: column; }
     .pv-page:last-child { border-bottom: none; }
     .pv-brandrow { display: flex; align-items: center; gap: 8px; color: var(--accent); margin-bottom: 22px; }
     .pv-company-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -821,6 +821,11 @@ const GlobalStyle = () => (
     .pv-qr-box div { font-size: 9px; color: var(--ink-faint); margin-top: 6px; }
     .pv-partner-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .pv-sim-result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 14px; }
+    .pv-scale-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12px; }
+    .pv-scale-table th { text-align: right; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); font-weight: 700; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+    .pv-scale-table th:first-child, .pv-scale-table td:first-child { text-align: left; }
+    .pv-scale-table td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); color: var(--ink); }
+    .pv-scale-table tr:last-child td { font-weight: 700; }
     @media print {
       .pv-page { break-after: page; }
     }
@@ -1924,6 +1929,21 @@ function generatePartnerCode(contador) {
   return `PAR-${String(contador).padStart(4, "0")}`;
 }
 
+// NOVO — se o destino do QR Code for um link de WhatsApp (wa.me ou
+// api.whatsapp.com) e ainda não tiver uma mensagem definida, acrescenta uma
+// mensagem pré-preenchida para reduzir o atrito do corretor ao entrar em
+// contato. Qualquer outro destino (site, e-mail, etc.) permanece inalterado
+// — o destino em si continua sendo o que o usuário configurar, nunca uma
+// URL fixa no código.
+function buildParceriaQrTarget(destino) {
+  const url = (destino || "").trim();
+  const isWhatsApp = /^https?:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(url);
+  if (!isWhatsApp || /[?&]text=/i.test(url)) return url;
+  const mensagem = "Olá, Emanuel! Quero conhecer a parceria com a MS Gestão de Imóveis. Tenho um imóvel em mente para indicar.";
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}text=${encodeURIComponent(mensagem)}`;
+}
+
 // Referências de mercado fixas, usadas como contexto comercial (não
 // calculadas a partir dos dados do usuário — números de mercado fornecidos
 // para compor a narrativa, sempre como referência, nunca como garantia).
@@ -2585,8 +2605,11 @@ function PgParceria2({ config }) {
       <p className="pv-indicator-note" style={{ marginTop: 10 }}>
         Exemplo ilustrativo. A remuneração efetiva depende da receita e da comissão de gestão efetivamente geradas pela operação.
       </p>
+      <p className="pv-sub" style={{ marginTop: 8, maxWidth: "none", fontStyle: "italic" }}>
+        A cada R$ 1.000 de comissão de gestão gerada pela MS, R$ 250 correspondem à participação do parceiro.
+      </p>
 
-      <div className="pv-compare-banner" style={{ marginTop: 24 }}>
+      <div className="pv-compare-banner" style={{ marginTop: 20 }}>
         <PvIcon name="trend" size={18} />
         <div>
           <div className="headline">Você não recebe apenas pela indicação</div>
@@ -2634,6 +2657,25 @@ function PgParceria3({ config }) {
         comissão de gestão efetivamente geradas pela operação.
       </p>
 
+      <div className="pv-rule" />
+      <div className="pv-market-title" style={{ textAlign: "left" }}>Transforme indicações em uma carteira de receita</div>
+      <table className="pv-scale-table">
+        <thead>
+          <tr><th>Imóveis convertidos</th><th>Comissão estimada da MS*</th><th>Participação do parceiro*</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>R$ 700/mês</td><td>R$ 175/mês</td></tr>
+          <tr><td>3</td><td>R$ 2.100/mês</td><td>R$ 525/mês</td></tr>
+          <tr><td>5</td><td>R$ 3.500/mês</td><td>R$ 875/mês</td></tr>
+          <tr><td>10</td><td>R$ 7.000/mês</td><td>R$ 1.750/mês</td></tr>
+        </tbody>
+      </table>
+      <p className="pv-indicator-note" style={{ marginTop: 8 }}>
+        *Simulação ilustrativa considerando R$ 700/mês de comissão de gestão estimada por imóvel. A remuneração
+        efetiva depende da comissão de gestão efetivamente gerada pela operação e do período de participação
+        previsto na parceria.
+      </p>
+
       <PvFooter n={3} />
     </div>
   );
@@ -2652,6 +2694,9 @@ function PgParceria4() {
       <ul className="pv-checklist" style={{ columns: 2 }}>
         {semOperacao.map((s, i) => <li key={i}><PvIcon name="checkcircle" size={14} />{s}</li>)}
       </ul>
+      <p className="pv-indicator-note" style={{ marginTop: 6, fontStyle: "italic" }}>
+        Seu papel termina na indicação e no relacionamento. A operação fica com a MS.
+      </p>
 
       <div className="pv-quote-box" style={{ marginTop: 18 }}>
         <PvIcon name="quote" size={16} />
@@ -2693,9 +2738,12 @@ function PgParceria5() {
 
       <div className="pv-rule" />
       <div className="pv-market-title" style={{ textAlign: "left" }}>Monetize a mesma carteira mais de uma vez</div>
+      <p className="pv-sub" style={{ maxWidth: "none", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 14, color: "var(--ink)" }}>
+        E se a venda não fosse o último momento em que você ganha com esse cliente?
+      </p>
       <p className="pv-sub" style={{ maxWidth: "none" }}>
         Além da comissão tradicional de venda ou locação, um imóvel da sua carteira pode continuar gerando valor
-        após o fechamento, por meio da parceria de gestão.
+        após o fechamento, por meio da parceria de gestão. Você já construiu a carteira — agora ela pode gerar mais valor.
       </p>
       <div className="pv-quote-box">
         <PvIcon name="swap" size={16} />
@@ -2726,7 +2774,10 @@ function PgParceria6() {
   return (
     <div className="pv-page">
       <div className="pv-eyebrow">Oportunidades</div>
-      <h2 className="pv-title-sm">Quais imóveis podem gerar oportunidades?</h2>
+      <h2 className="pv-title-sm">Olhe para sua carteira com outros olhos</h2>
+      <p className="pv-indicator-note" style={{ marginBottom: 4, fontStyle: "italic" }}>
+        Você provavelmente já conhece imóveis que podem se encaixar nesse modelo.
+      </p>
       <div>
         {oportunidades.map((o, i) => (
           <div className="pv-opportunity-item" key={i}>
@@ -2756,8 +2807,8 @@ function PgParceria7({ config, qrDataUrl }) {
   return (
     <div className="pv-page">
       <div className="pv-eyebrow">Próximo passo</div>
-      <h2 className="pv-title-sm">Vamos construir essa parceria?</h2>
-      <p className="pv-sub" style={{ maxWidth: "none" }}>Você cuida do relacionamento. A MS Gestão de Imóveis cuida da operação.</p>
+      <h2 className="pv-title-sm">Tem um imóvel em mente? Envie para a MS.</h2>
+      <p className="pv-sub" style={{ maxWidth: "none" }}>Nós avaliamos o potencial da oportunidade e orientamos os próximos passos.</p>
 
       <div className="pv-cta-contact">
         <div className="pv-cta-contact-list">
@@ -3026,7 +3077,7 @@ export default function App() {
     }
     import("qrcode").then((QRCode) => {
       if (cancelled) return;
-      QRCode.toDataURL(parceriaConfig.qrDestino.trim(), { margin: 1, width: 240 })
+      QRCode.toDataURL(buildParceriaQrTarget(parceriaConfig.qrDestino), { margin: 1, width: 240 })
         .then((url) => { if (!cancelled) setParceriaQrDataUrl(url); })
         .catch(() => { if (!cancelled) setParceriaQrDataUrl(null); });
     });
