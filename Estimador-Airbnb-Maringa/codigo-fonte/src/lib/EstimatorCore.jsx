@@ -596,6 +596,32 @@ async function saveJSON(key, value) {
 const GlobalStyle = () => (
   <style>{`
     :root {
+      --bg: #F7F6F2;
+      --paper: #FFFFFF;
+      --ink: #0B1726;
+      --ink-soft: #4B5768;
+      --ink-faint: #8A93A3;
+      --line: #E2E5EB;
+      --line-soft: #EEF0F4;
+      --accent: #1E5AA8;
+      --accent-soft: #E8F0FA;
+      --warm: #C1793D;
+      --warm-soft: #F5E7D8;
+      --alert: #AE4A3B;
+      --alert-soft: #F4E1DD;
+      --good: #2E6F5E;
+      --good-soft: #E1EFE7;
+      --mid: #B4842A;
+      --mid-soft: #F4E9D3;
+      --champagne: #B89B5E;
+    }
+    /* NOVO — os documentos em PDF (Estudo de Potencial e Proposta de
+       Parceria) usam as mesmas variáveis de cor acima. Para que a
+       modernização visual da PLATAFORMA não altere o PDF (exigência
+       explícita), fixamos aqui, dentro de .pv-doc, os valores ORIGINAIS
+       (a identidade verde já aprovada), independentemente da paleta do
+       :root. Isso garante que os PDFs saiam exatamente como sempre saíram. */
+    .pv-doc, .pv-doc * {
       --bg: #F6F5F1;
       --paper: #FFFFFF;
       --ink: #17302B;
@@ -605,26 +631,19 @@ const GlobalStyle = () => (
       --line-soft: #EAE7DC;
       --accent: #2E6F5E;
       --accent-soft: #E4EFE9;
-      --warm: #C1793D;
-      --warm-soft: #F5E7D8;
-      --alert: #AE4A3B;
-      --alert-soft: #F4E1DD;
-      --good: #2E6F5E;
-      --good-soft: #E1EFE7;
-      --mid: #B4842A;
-      --mid-soft: #F4E9D3;
     }
     .rmi-root { background: var(--bg); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
     .rmi-display { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; }
     .rmi-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .rmi-shell { display: flex; min-height: 100vh; }
-    .rmi-sidebar { width: 232px; flex-shrink: 0; background: var(--ink); color: #EDEEE9; display: flex; flex-direction: column; padding: 22px 14px; }
-    .rmi-brand { font-family: Georgia, serif; font-size: 19px; line-height: 1.25; padding: 0 10px 20px 10px; border-bottom: 1px solid rgba(255,255,255,0.14); margin-bottom: 14px; }
-    .rmi-brand small { display:block; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #AAB5AC; margin-top: 4px; }
-    .rmi-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; font-size: 13.5px; cursor: pointer; color: #D7DAD3; margin-bottom: 2px; border: 1px solid transparent; }
+    .rmi-sidebar { width: 240px; flex-shrink: 0; background: var(--ink); color: #E7EAF0; display: flex; flex-direction: column; padding: 24px 14px; }
+    .rmi-brand { font-family: Georgia, serif; font-size: 19px; line-height: 1.25; padding: 0 10px 20px 10px; border-bottom: 1px solid rgba(255,255,255,0.10); margin-bottom: 16px; }
+    .rmi-brand small { display:block; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #8B95A8; margin-top: 4px; }
+    .rmi-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13.5px; cursor: pointer; color: #C3C9D6; margin-bottom: 3px; border: 1px solid transparent; transition: background 0.12s ease; }
     .rmi-nav-item:hover { background: rgba(255,255,255,0.06); }
-    .rmi-nav-item.active { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.14); }
-    .rmi-nav-num { font-family: ui-monospace, monospace; font-size: 11px; color: #8FA79B; width: 16px; }
+    .rmi-nav-item.active { background: var(--accent); color: #fff; border-color: transparent; box-shadow: 0 2px 10px rgba(30,90,168,0.35); }
+    .rmi-nav-num { font-family: ui-monospace, monospace; font-size: 11px; color: #8B95A8; width: 16px; }
+    .rmi-nav-item.active .rmi-nav-num { color: rgba(255,255,255,0.75); }
     .rmi-main { flex: 1; min-width: 0; padding: 28px 34px 60px 34px; }
     .rmi-mobile-nav { display: none; }
     @media (max-width: 860px) {
@@ -637,7 +656,7 @@ const GlobalStyle = () => (
     .eyebrow { font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
     .page-title { font-family: Georgia, serif; font-size: 28px; margin: 4px 0 6px 0; letter-spacing: -0.01em; }
     .page-sub { color: var(--ink-soft); font-size: 13.5px; max-width: 640px; line-height: 1.5; margin-bottom: 22px; }
-    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 18px 20px; }
+    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(11,23,38,0.04); }
     .card + .card { margin-top: 14px; }
     .card-title { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); margin-bottom: 12px; }
     .grid { display: grid; gap: 14px; }
@@ -647,14 +666,14 @@ const GlobalStyle = () => (
     @media (max-width: 700px) { .g2, .g3, .g4 { grid-template-columns: 1fr 1fr; } }
     .field { display: flex; flex-direction: column; gap: 4px; }
     .field label { font-size: 11.5px; color: var(--ink-soft); font-weight: 600; }
-    .rmi-input, .rmi-select, .rmi-textarea { border: 1px solid var(--line); background: var(--paper); border-radius: 3px; padding: 7px 9px; font-size: 13.5px; color: var(--ink); font-family: inherit; }
+    .rmi-input, .rmi-select, .rmi-textarea { border: 1px solid var(--line); background: var(--paper); border-radius: 7px; padding: 8px 10px; font-size: 13.5px; color: var(--ink); font-family: inherit; }
     .rmi-input:focus, .rmi-select:focus, .rmi-textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
     .rmi-textarea { resize: vertical; min-height: 56px; }
     .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; }
     .check-row input { width: 15px; height: 15px; accent-color: var(--accent); }
-    .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 3px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; border: 1px solid transparent; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 7px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; border: 1px solid transparent; }
     .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #275C4D; }
+    .btn-primary:hover { background: #184A8C; }
     .btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); }
     .btn-ghost:hover { background: var(--line-soft); }
     .btn-warm { background: var(--warm); color: #fff; }
@@ -878,14 +897,32 @@ function AlertList({ alerts }) {
    NAV
    ========================================================================= */
 
+// NOVO — ícones discretos de traço fino para a navegação lateral (parte da
+// modernização visual da interface; não usado nos PDFs).
+function AppIcon({ name, size = 15 }) {
+  const c = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" };
+  switch (name) {
+    case "bolt": return <svg {...c}><polygon points="13,2 4,14 11,14 10,22 20,10 13,10" /></svg>;
+    case "grid": return <svg {...c}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>;
+    case "book": return <svg {...c}><path d="M4 5c2-1 5-1 7 0v14c-2-1-5-1-7 0z" /><path d="M20 5c-2-1-5-1-7 0v14c2-1 5-1 7 0z" /></svg>;
+    case "gear": return <svg {...c}><circle cx="12" cy="12" r="3" /><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" /></svg>;
+    case "presentation": return <svg {...c}><rect x="3" y="4" width="18" height="12" rx="1.5" /><path d="M8 20l4-4 4 4" /></svg>;
+    case "clock": return <svg {...c}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>;
+    case "handshake": return <svg {...c}><path d="M2 12l5-4 4 3 3-2 5 4-3 4-2-1-3 3-4-3-5 1z" /></svg>;
+    case "building": return <svg {...c}><rect x="5" y="3" width="14" height="18" rx="1" /><line x1="9" y1="7" x2="9" y2="7.01" /><line x1="15" y1="7" x2="15" y2="7.01" /><line x1="9" y1="11" x2="9" y2="11.01" /><line x1="15" y1="11" x2="15" y2="11.01" /><line x1="9" y1="15" x2="9" y2="15.01" /><line x1="15" y1="15" x2="15" y2="15.01" /></svg>;
+    default: return null;
+  }
+}
+
 const NAV_ITEMS = [
-  { key: "analise", num: "01", label: "Análise Rápida" },
-  { key: "base", num: "02", label: "Base de Comparáveis" },
-  { key: "referencias", num: "03", label: "Banco de Referências" },
-  { key: "config", num: "04", label: "Configurações" },
-  { key: "apresentacao", num: "05", label: "Apresentação" },
-  { key: "historico", num: "06", label: "Histórico de Análises" },
-  { key: "parceria", num: "07", label: "Parceria com Corretores" },
+  { key: "analise", num: "01", label: "Análise Rápida", icon: "bolt" },
+  { key: "base", num: "02", label: "Base de Comparáveis", icon: "grid" },
+  { key: "referencias", num: "03", label: "Banco de Referências", icon: "book" },
+  { key: "config", num: "04", label: "Configurações", icon: "gear" },
+  { key: "apresentacao", num: "05", label: "Apresentação", icon: "presentation" },
+  { key: "historico", num: "06", label: "Histórico de Análises", icon: "clock" },
+  { key: "parceria", num: "07", label: "Parceria com Corretores", icon: "handshake" },
+  { key: "gestao", num: "08", label: "Gestão de Imóveis", icon: "building" },
 ];
 
 function Nav({ view, setView, mobile }) {
@@ -893,7 +930,7 @@ function Nav({ view, setView, mobile }) {
     <>
       {NAV_ITEMS.map((it) => (
         <div key={it.key} className={`rmi-nav-item ${view === it.key ? "active" : ""}`} onClick={() => setView(it.key)}>
-          <span className="rmi-nav-num">{it.num}</span>{it.label}
+          <AppIcon name={it.icon} size={15} /><span className="rmi-nav-num">{it.num}</span>{it.label}
         </div>
       ))}
     </>
@@ -2981,6 +3018,457 @@ function ParceriaScreen({ config, setConfig, onGerarCodigo, onExportPdf, exporti
 }
 
 /* =========================================================================
+   GESTÃO DE IMÓVEIS
+   (NOVO — módulo independente e isolado, inspirado na planilha de gestão
+   operacional fornecida como referência. Não reutiliza nem altera nenhuma
+   estrutura de dados existente (comparáveis, análises, configurações,
+   parceria) — tem sua própria persistência (`gestaoImoveis` no
+   localStorage) e sua própria lógica. Um erro aqui não afeta o restante
+   do sistema. Segue a mesma linguagem visual dos demais módulos (card,
+   rmi-table, rmi-input, btn) para não criar um estilo à parte.)
+   ========================================================================= */
+
+// Estrutura declarativa dos 12 módulos com CRUD simples (Dashboard,
+// Reservas/Calendário e Financeiro têm telas próprias, descritas abaixo).
+const GESTAO_SCHEMAS = {
+  imoveis: {
+    label: "Imóveis", displayField: "nome",
+    fields: [
+      { key: "nome", label: "Nome/Apelido", type: "text", required: true },
+      { key: "endereco", label: "Endereço", type: "text" },
+      { key: "bairro", label: "Bairro", type: "text" },
+      { key: "regiao", label: "Região", type: "text" },
+      { key: "tipo", label: "Tipo", type: "select", options: ["Apartamento", "Casa", "Kitnet/Studio", "Casa de condomínio", "Outro"] },
+      { key: "quartos", label: "Quartos", type: "number" },
+      { key: "banheiros", label: "Banheiros", type: "number" },
+      { key: "camas", label: "Camas", type: "number" },
+      { key: "capacidade", label: "Capacidade", type: "number" },
+      { key: "proprietarioId", label: "Proprietário", type: "ref", ref: "proprietarios" },
+      { key: "status", label: "Status", type: "select", options: ["Ativo", "Onboarding", "Inativo"] },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["nome", "bairro", "tipo", "status"],
+  },
+  proprietarios: {
+    label: "Proprietários", displayField: "nome",
+    fields: [
+      { key: "nome", label: "Nome", type: "text", required: true },
+      { key: "telefone", label: "Telefone", type: "text" },
+      { key: "email", label: "E-mail", type: "text" },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["nome", "telefone", "email"],
+  },
+  reservas: {
+    label: "Reservas", displayField: "hospede",
+    fields: [
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "hospede", label: "Hóspede", type: "text" },
+      { key: "checkin", label: "Check-in", type: "date" },
+      { key: "checkout", label: "Check-out", type: "date" },
+      { key: "plataforma", label: "Plataforma", type: "select", options: ["Airbnb", "Booking", "Direto", "Outro"] },
+      { key: "status", label: "Status", type: "select", options: ["Confirmada", "Pendente", "Cancelada", "Concluída"] },
+      { key: "valor", label: "Valor (R$)", type: "number" },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["imovelId", "hospede", "checkin", "checkout", "status"],
+  },
+  limpeza: {
+    label: "Limpeza", displayField: "data",
+    fields: [
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "data", label: "Data", type: "date" },
+      { key: "horario", label: "Horário", type: "text" },
+      { key: "responsavel", label: "Responsável", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Agendada", "Em andamento", "Concluída"] },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["imovelId", "data", "responsavel", "status"],
+  },
+  lavanderia: {
+    label: "Lavanderia", displayField: "dataEnvio",
+    fields: [
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "dataEnvio", label: "Data de envio", type: "date" },
+      { key: "dataRecebimento", label: "Data de recebimento", type: "date" },
+      { key: "quantidade", label: "Quantidade", type: "number" },
+      { key: "status", label: "Status", type: "select", options: ["Enviado", "Em processamento", "Recebido"] },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["imovelId", "dataEnvio", "quantidade", "status"],
+  },
+  enxoval: {
+    label: "Enxoval", displayField: "item",
+    fields: [
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "item", label: "Item", type: "text" },
+      { key: "quantidade", label: "Quantidade", type: "number" },
+      { key: "estoqueMinimo", label: "Estoque mínimo", type: "number" },
+      { key: "status", label: "Status", type: "select", options: ["OK", "Repor"] },
+    ],
+    columns: ["imovelId", "item", "quantidade", "status"],
+  },
+  manutencao: {
+    label: "Manutenção", displayField: "problema",
+    fields: [
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "problema", label: "Problema", type: "text" },
+      { key: "data", label: "Data", type: "date" },
+      { key: "prioridade", label: "Prioridade", type: "select", options: ["Baixa", "Média", "Alta", "Urgente"] },
+      { key: "prestadorId", label: "Prestador", type: "ref", ref: "prestadores" },
+      { key: "status", label: "Status", type: "select", options: ["Aberta", "Em andamento", "Concluída"] },
+      { key: "custo", label: "Custo (R$)", type: "number" },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["imovelId", "problema", "prioridade", "status"],
+  },
+  prestadores: {
+    label: "Prestadores", displayField: "nome",
+    fields: [
+      { key: "nome", label: "Nome", type: "text", required: true },
+      { key: "servico", label: "Serviço", type: "text" },
+      { key: "telefone", label: "Telefone", type: "text" },
+      { key: "contato", label: "Contato adicional", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Ativo", "Inativo"] },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["nome", "servico", "telefone", "status"],
+  },
+  comissoes: {
+    label: "Comissões", displayField: "periodo",
+    fields: [
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "periodo", label: "Período", type: "text" },
+      { key: "valorGerido", label: "Valor gerido (R$)", type: "number" },
+      { key: "comissao", label: "Comissão (R$)", type: "number" },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Paga"] },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["imovelId", "periodo", "comissao", "status"],
+  },
+  repasses: {
+    label: "Repasses", displayField: "periodo",
+    fields: [
+      { key: "proprietarioId", label: "Proprietário", type: "ref", ref: "proprietarios" },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "periodo", label: "Período", type: "text" },
+      { key: "valor", label: "Valor (R$)", type: "number" },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Pago"] },
+      { key: "data", label: "Data", type: "date" },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["proprietarioId", "periodo", "valor", "status"],
+  },
+  onboarding: {
+    label: "Onboarding", displayField: "etapa",
+    fields: [
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "etapa", label: "Etapa atual", type: "select", options: ["Documentação", "Cadastro", "Fotos", "Anúncio", "Precificação", "Operação", "Ativo"] },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["imovelId", "etapa"],
+  },
+  pendencias: {
+    label: "Pendências", displayField: "titulo",
+    fields: [
+      { key: "titulo", label: "Título", type: "text", required: true },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "prioridade", label: "Prioridade", type: "select", options: ["Baixa", "Média", "Alta"] },
+      { key: "status", label: "Status", type: "select", options: ["Aberta", "Concluída"] },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["titulo", "imovelId", "prioridade", "status"],
+  },
+  financeiro: {
+    label: "Financeiro", displayField: "descricao",
+    fields: [
+      { key: "tipo", label: "Tipo", type: "select", options: ["Receita", "Despesa"] },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "descricao", label: "Descrição", type: "text" },
+      { key: "valor", label: "Valor (R$)", type: "number" },
+      { key: "data", label: "Data", type: "date" },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["tipo", "descricao", "valor", "data"],
+  },
+};
+
+const GESTAO_MODULE_ORDER = ["imoveis", "proprietarios", "reservas", "calendario", "limpeza", "lavanderia", "enxoval", "manutencao", "prestadores", "financeiro", "comissoes", "repasses", "onboarding", "pendencias"];
+const GESTAO_MODULE_ICON = { imoveis: "building", proprietarios: "handshake", reservas: "presentation", calendario: "clock", limpeza: "grid", lavanderia: "grid", enxoval: "grid", manutencao: "gear", prestadores: "handshake", financeiro: "bolt", comissoes: "bolt", repasses: "bolt", onboarding: "book", pendencias: "gear" };
+const GESTAO_MODULE_LABEL = { ...Object.fromEntries(Object.entries(GESTAO_SCHEMAS).map(([k, v]) => [k, v.label])), calendario: "Calendário" };
+const GESTAO_MODULE_DESC = {
+  imoveis: "Cadastro e gerenciamento", proprietarios: "Gestão de proprietários", reservas: "Controle de reservas",
+  calendario: "Agenda operacional", limpeza: "Controle de limpezas", lavanderia: "Gestão de lavanderia",
+  enxoval: "Controle de enxoval", manutencao: "Solicitações e histórico", prestadores: "Fornecedores e serviços",
+  financeiro: "Receitas e despesas", comissoes: "Comissões e pagamentos", repasses: "Repasses a proprietários",
+  onboarding: "Entrada de novos imóveis", pendencias: "Acompanhamento de tarefas",
+};
+
+function gestaoRefLabel(allData, ref, id) {
+  if (!id) return "—";
+  const schema = GESTAO_SCHEMAS[ref];
+  const item = (allData[ref] || []).find((x) => x.id === id);
+  return item ? (item[schema.displayField] || "—") : "—";
+}
+
+function GestaoField({ field, value, onChange, allData }) {
+  if (field.type === "select") {
+    return (
+      <select className="rmi-select" value={value || ""} onChange={(e) => onChange(e.target.value)}>
+        <option value="">—</option>
+        {field.options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  }
+  if (field.type === "ref") {
+    const options = allData[field.ref] || [];
+    const schema = GESTAO_SCHEMAS[field.ref];
+    return (
+      <select className="rmi-select" value={value || ""} onChange={(e) => onChange(e.target.value)}>
+        <option value="">—</option>
+        {options.map((o) => <option key={o.id} value={o.id}>{o[schema.displayField] || "(sem nome)"}</option>)}
+      </select>
+    );
+  }
+  if (field.type === "textarea") {
+    return <textarea className="rmi-textarea" style={{ width: "100%" }} value={value || ""} onChange={(e) => onChange(e.target.value)} />;
+  }
+  return <input type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"} className="rmi-input" value={value || ""} onChange={(e) => onChange(e.target.value)} />;
+}
+
+function GestaoForm({ moduleKey, initial, onSave, onCancel, allData }) {
+  const schema = GESTAO_SCHEMAS[moduleKey];
+  const [item, setItem] = useState(initial || { id: null });
+  const set = (key, v) => setItem({ ...item, [key]: v });
+  return (
+    <div className="card">
+      <div className="card-title">{item.id ? `Editar ${schema.label.toLowerCase()}` : `Novo registro — ${schema.label}`}</div>
+      <div className="grid g2">
+        {schema.fields.map((f) => (
+          <Field key={f.key} label={f.label + (f.required ? " *" : "")}>
+            <GestaoField field={f} value={item[f.key]} onChange={(v) => set(f.key, v)} allData={allData} />
+          </Field>
+        ))}
+      </div>
+      <div className="hstack" style={{ marginTop: 14 }}>
+        <button className="btn btn-primary" onClick={() => {
+          const req = schema.fields.find((f) => f.required && !String(item[f.key] || "").trim());
+          if (req) { window.alert(`Preencha o campo "${req.label}".`); return; }
+          onSave({ ...item, id: item.id || uid() });
+        }}>Salvar</button>
+        <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+function GestaoCrudScreen({ moduleKey, allData, setModuleData }) {
+  const schema = GESTAO_SCHEMAS[moduleKey];
+  const [editing, setEditing] = useState(null); // null | 'new' | item
+  const items = allData[moduleKey] || [];
+
+  const handleSave = (item) => {
+    const exists = items.some((x) => x.id === item.id);
+    setModuleData(moduleKey, exists ? items.map((x) => (x.id === item.id ? item : x)) : [...items, item]);
+    setEditing(null);
+  };
+  const handleDelete = (id) => {
+    if (!window.confirm("Excluir este registro?")) return;
+    setModuleData(moduleKey, items.filter((x) => x.id !== id));
+  };
+
+  return (
+    <div>
+      <div className="spread">
+        <div>
+          <div className="eyebrow">Gestão de Imóveis</div>
+          <h1 className="page-title">{schema.label}</h1>
+          <p className="page-sub" style={{ marginBottom: 0 }}>{GESTAO_MODULE_DESC[moduleKey]}</p>
+        </div>
+        {editing === null && <button className="btn btn-primary" onClick={() => setEditing("new")}>+ Novo</button>}
+      </div>
+
+      {editing === "new" && <GestaoForm moduleKey={moduleKey} onSave={handleSave} onCancel={() => setEditing(null)} allData={allData} />}
+      {editing && editing !== "new" && <GestaoForm moduleKey={moduleKey} initial={editing} onSave={handleSave} onCancel={() => setEditing(null)} allData={allData} />}
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <table className="rmi-table">
+          <thead>
+            <tr>{schema.columns.map((c) => <th key={c}>{schema.fields.find((f) => f.key === c)?.label || c}</th>)}<th></th></tr>
+          </thead>
+          <tbody>
+            {items.map((it) => (
+              <tr key={it.id}>
+                {schema.columns.map((c) => {
+                  const field = schema.fields.find((f) => f.key === c);
+                  const val = field && field.type === "ref" ? gestaoRefLabel(allData, field.ref, it[c]) : (field && field.type === "number" && it[c] !== undefined && it[c] !== "" ? fmtMoney(toNum(it[c])) : (it[c] || "—"));
+                  return <td key={c}>{val}</td>;
+                })}
+                <td className="hstack">
+                  <button className="link-btn" onClick={() => setEditing(it)}>editar</button>
+                  <button className="link-btn" style={{ color: "var(--alert)" }} onClick={() => handleDelete(it.id)}>excluir</button>
+                </td>
+              </tr>
+            ))}
+            {items.length === 0 && <tr><td colSpan={schema.columns.length + 1} className="footnote" style={{ padding: 16 }}>Nenhum registro ainda.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Calendário — visão simplificada em lista dos próximos eventos operacionais
+// (reservas, limpezas, manutenções), agrupados por data. Não é um grid de
+// calendário completo — ver observação na entrega.
+function GestaoCalendarioScreen({ allData }) {
+  const eventos = [];
+  (allData.reservas || []).forEach((r) => {
+    if (r.checkin) eventos.push({ data: r.checkin, tipo: "Check-in", desc: `${gestaoRefLabel(allData, "imoveis", r.imovelId)} — ${r.hospede || ""}` });
+    if (r.checkout) eventos.push({ data: r.checkout, tipo: "Check-out", desc: `${gestaoRefLabel(allData, "imoveis", r.imovelId)} — ${r.hospede || ""}` });
+  });
+  (allData.limpeza || []).forEach((l) => { if (l.data) eventos.push({ data: l.data, tipo: "Limpeza", desc: gestaoRefLabel(allData, "imoveis", l.imovelId) }); });
+  (allData.manutencao || []).forEach((m) => { if (m.data) eventos.push({ data: m.data, tipo: "Manutenção", desc: `${gestaoRefLabel(allData, "imoveis", m.imovelId)} — ${m.problema || ""}` }); });
+  eventos.sort((a, b) => String(a.data).localeCompare(String(b.data)));
+
+  return (
+    <div>
+      <div className="eyebrow">Gestão de Imóveis</div>
+      <h1 className="page-title">Calendário</h1>
+      <p className="page-sub">Visão em lista dos próximos check-ins, check-outs, limpezas e manutenções, ordenados por data.</p>
+      <div className="card">
+        <table className="rmi-table">
+          <thead><tr><th>Data</th><th>Tipo</th><th>Detalhe</th></tr></thead>
+          <tbody>
+            {eventos.map((e, i) => <tr key={i}><td className="rmi-mono">{e.data}</td><td>{e.tipo}</td><td>{e.desc}</td></tr>)}
+            {eventos.length === 0 && <tr><td colSpan={3} className="footnote" style={{ padding: 16 }}>Nenhum evento cadastrado ainda. Cadastre reservas, limpezas ou manutenções para vê-las aqui.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function gestaoDaysFromToday(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.round((d - today) / 86400000);
+}
+
+function GestaoDashboard({ allData, setView, setGestaoModule }) {
+  const imoveis = allData.imoveis || [];
+  const reservas = allData.reservas || [];
+  const pendencias = allData.pendencias || [];
+  const hoje = new Date();
+  const reservasMes = reservas.filter((r) => {
+    if (!r.checkin) return false;
+    const d = new Date(r.checkin + "T00:00:00");
+    return !Number.isNaN(d.getTime()) && d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear();
+  }).length;
+  const checkinsProximos = reservas.filter((r) => { const d = gestaoDaysFromToday(r.checkin); return d !== null && d >= 0 && d <= 7; }).length;
+  const checkoutsProximos = reservas.filter((r) => { const d = gestaoDaysFromToday(r.checkout); return d !== null && d >= 0 && d <= 7; }).length;
+  const pendenciasAbertas = pendencias.filter((p) => p.status === "Aberta").length;
+
+  const atividades = [];
+  reservas.forEach((r) => {
+    const din = gestaoDaysFromToday(r.checkin), dout = gestaoDaysFromToday(r.checkout);
+    if (din !== null && din >= 0 && din <= 7) atividades.push({ data: r.checkin, label: `Check-in — ${gestaoRefLabel(allData, "imoveis", r.imovelId)}`, status: r.status || "—" });
+    if (dout !== null && dout >= 0 && dout <= 7) atividades.push({ data: r.checkout, label: `Check-out — ${gestaoRefLabel(allData, "imoveis", r.imovelId)}`, status: r.status || "—" });
+  });
+  (allData.limpeza || []).forEach((l) => { const d = gestaoDaysFromToday(l.data); if (d !== null && d >= 0 && d <= 7) atividades.push({ data: l.data, label: `Limpeza — ${gestaoRefLabel(allData, "imoveis", l.imovelId)}`, status: l.status || "—" }); });
+  (allData.manutencao || []).forEach((m) => { const d = gestaoDaysFromToday(m.data); if (d !== null && d >= 0 && d <= 7) atividades.push({ data: m.data, label: `Manutenção — ${gestaoRefLabel(allData, "imoveis", m.imovelId)}`, status: m.status || "—" }); });
+  atividades.sort((a, b) => String(a.data).localeCompare(String(b.data)));
+
+  const kpis = [
+    { label: "Imóveis administrados", value: imoveis.length, icon: "building" },
+    { label: "Reservas este mês", value: reservasMes, icon: "presentation" },
+    { label: "Check-ins próximos (7 dias)", value: checkinsProximos, icon: "clock" },
+    { label: "Check-outs próximos (7 dias)", value: checkoutsProximos, icon: "clock" },
+    { label: "Pendências abertas", value: pendenciasAbertas, icon: "gear" },
+  ];
+
+  return (
+    <div>
+      <div className="eyebrow">Gestão de Imóveis</div>
+      <h1 className="page-title">Bem-vindo à Gestão de Imóveis</h1>
+      <p className="page-sub">Controle, operação e resultados da sua carteira em um único lugar. Os números abaixo vêm dos dados que você cadastrar nos módulos — comece em "Imóveis" e "Reservas".</p>
+
+      <div className="grid g4" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
+        {kpis.map((k) => (
+          <div className="card" key={k.label} style={{ padding: "16px 16px" }}>
+            <AppIcon name={k.icon} size={18} />
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: "var(--ink)", marginTop: 8 }}>{k.value}</div>
+            <div className="footnote">{k.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-title">Próximas atividades (7 dias)</div>
+        <table className="rmi-table">
+          <thead><tr><th>Data</th><th>Atividade</th><th>Status</th></tr></thead>
+          <tbody>
+            {atividades.map((a, i) => <tr key={i}><td className="rmi-mono">{a.data}</td><td>{a.label}</td><td>{a.status}</td></tr>)}
+            {atividades.length === 0 && <tr><td colSpan={3} className="footnote" style={{ padding: 16 }}>Nenhuma atividade nos próximos 7 dias. Cadastre reservas, limpezas ou manutenções para acompanhar aqui.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-title">Acesso rápido aos módulos</div>
+        <div className="grid g3">
+          {GESTAO_MODULE_ORDER.map((m) => (
+            <div key={m} className="card" style={{ cursor: "pointer", padding: "14px 16px" }} onClick={() => setGestaoModule(m)}>
+              <div className="hstack">
+                <AppIcon name={GESTAO_MODULE_ICON[m]} size={16} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13.5 }}>{GESTAO_MODULE_LABEL[m]}</div>
+                  <div className="footnote">{GESTAO_MODULE_DESC[m]}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GestaoFinanceiroScreen({ allData, setModuleData }) {
+  const lancamentos = allData.financeiro || [];
+  const receitas = lancamentos.filter((l) => l.tipo === "Receita").reduce((s, l) => s + toNum(l.valor), 0);
+  const despesas = lancamentos.filter((l) => l.tipo === "Despesa").reduce((s, l) => s + toNum(l.valor), 0);
+  return (
+    <div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="grid g3">
+          <div><div className="kpi-label">Receitas</div><div style={{ fontWeight: 700, color: "var(--good)" }}>{fmtMoney(receitas)}</div></div>
+          <div><div className="kpi-label">Despesas</div><div style={{ fontWeight: 700, color: "var(--alert)" }}>{fmtMoney(despesas)}</div></div>
+          <div><div className="kpi-label">Resultado</div><div style={{ fontWeight: 700 }}>{fmtMoney(receitas - despesas)}</div></div>
+        </div>
+      </div>
+      <GestaoCrudScreen moduleKey="financeiro" allData={allData} setModuleData={setModuleData} />
+    </div>
+  );
+}
+
+function GestaoScreen({ allData, setModuleData, gestaoModule, setGestaoModule }) {
+  if (!gestaoModule) return <GestaoDashboard allData={allData} setGestaoModule={setGestaoModule} />;
+  return (
+    <div>
+      <button className="link-btn" style={{ marginBottom: 14 }} onClick={() => setGestaoModule(null)}>← Voltar ao painel</button>
+      {gestaoModule === "calendario" && <GestaoCalendarioScreen allData={allData} />}
+      {gestaoModule === "financeiro" && <GestaoFinanceiroScreen allData={allData} setModuleData={setModuleData} />}
+      {gestaoModule !== "calendario" && gestaoModule !== "financeiro" && (
+        <GestaoCrudScreen moduleKey={gestaoModule} allData={allData} setModuleData={setModuleData} />
+      )}
+    </div>
+  );
+}
+
+/* =========================================================================
    ROOT APP
    ========================================================================= */
 
@@ -2997,17 +3485,23 @@ export default function App() {
   // NOVO — código único da análise atual + Histórico de Análises (persistido localmente)
   const [analysisCode, setAnalysisCode] = useState(null);
   const [historico, setHistoricoState] = useState([]);
+  // NOVO — Gestão de Imóveis: dados isolados em uma única chave própria
+  // (`gestaoImoveis`), sem tocar em comparables/settings/histórico.
+  const [gestaoData, setGestaoDataState] = useState({});
+  const [gestaoModule, setGestaoModule] = useState(null);
 
   useEffect(() => {
     (async () => {
       const savedComps = await loadJSON("comparables", null);
       const savedSettings = await loadJSON("settings", null);
       const savedHistorico = await loadJSON("historicoAnalises", null);
+      const savedGestao = await loadJSON("gestaoImoveis", null);
       // Only seed demo data the very first time (key never saved before).
       // If the person has since saved an empty list on purpose, respect that.
       setComparablesState(savedComps !== null ? savedComps : DEMO_COMPARABLES);
       setSettingsState(normalizeSettings(savedSettings));
       setHistoricoState(Array.isArray(savedHistorico) ? savedHistorico : []);
+      setGestaoDataState(savedGestao && typeof savedGestao === "object" ? savedGestao : {});
       setReady(true);
     })();
   }, []);
@@ -3023,6 +3517,15 @@ export default function App() {
   const setHistorico = useCallback((next) => {
     setHistoricoState(next);
     saveJSON("historicoAnalises", next).then((ok) => { if (!ok) setSaveError(true); });
+  }, []);
+  // NOVO — atualiza apenas um sub-módulo da Gestão de Imóveis (ex.: "imoveis",
+  // "reservas") dentro do objeto único persistido em `gestaoImoveis`.
+  const setGestaoModuleData = useCallback((moduleKey, items) => {
+    setGestaoDataState((prev) => {
+      const next = { ...prev, [moduleKey]: items };
+      saveJSON("gestaoImoveis", next).then((ok) => { if (!ok) setSaveError(true); });
+      return next;
+    });
   }, []);
 
   const handleAnalyze = () => {
@@ -3303,6 +3806,9 @@ export default function App() {
               onExportPdf={handleExportParceriaPdf} exporting={exportingParceriaPdf}
               qrDataUrl={parceriaQrDataUrl} exportRef={parceriaExportRef}
             />
+          )}
+          {view === "gestao" && (
+            <GestaoScreen allData={gestaoData} setModuleData={setGestaoModuleData} gestaoModule={gestaoModule} setGestaoModule={setGestaoModule} />
           )}
         </div>
       </div>

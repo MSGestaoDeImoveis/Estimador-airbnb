@@ -176,6 +176,78 @@ cada página do estudo vira uma página própria do PDF (evita cortar
 cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
 comparáveis individuais, scores, pesos ou custos internos.
 
+## Atualização: modernização visual da plataforma + nova aba "Gestão de Imóveis"
+
+Esta foi a maior atualização até agora, então vale ler com calma antes de
+usar. Duas frentes, tratadas separadamente por causa de uma regra
+explícita do pedido: **os PDFs (Estudo de Potencial e Proposta de
+Parceria) não podem mudar nem um pixel.**
+
+### Como isso foi garantido tecnicamente
+
+O visual do app inteiro e o visual dos PDFs usavam as MESMAS variáveis de
+cor internamente. Se eu simplesmente trocasse a paleta verde pela nova
+paleta azul/navy, os PDFs sairiam azuis também — o que é exatamente o que
+foi proibido. Resolvi isso fixando as cores originais (verde) *só dentro*
+do contêiner que gera os PDFs (`.pv-doc`), então o app pode ter qualquer
+paleta nova sem que isso vaze para o PDF. Testei isso de verdade:
+gerei o Estudo de Potencial depois da mudança e conferi pixel a pixel que
+a caixa de destaque verde do PDF continua exatamente com a cor original
+(`#E4EFE9`), mesmo com o app inteiro agora em navy/azul.
+
+### Modernização visual (interface, não documentos)
+
+- Nova paleta: navy profundo na sidebar (`#0B1726`), azul institucional
+  nos botões e estados ativos (`#1E5AA8`), fundo off-white (`#F7F6F2`).
+  Nada de verde como cor principal da interface (o verde continua só nos
+  PDFs, como já era).
+- Sidebar redesenhada: ícones discretos por módulo, numeração, destaque
+  azul no item ativo.
+- Cards, inputs e botões com cantos mais arredondados e sombra bem leve —
+  aparência de SaaS atual em vez de formulário simples. Nenhum
+  formulário mudou de comportamento, só a aparência.
+
+### Nova aba 8 — Gestão de Imóveis
+
+Módulo novo e isolado (chave própria no armazenamento local,
+`gestaoImoveis` — não toca em comparáveis, análises, histórico,
+configurações ou parceria). Tem um painel inicial com indicadores reais
+(imóveis cadastrados, reservas do mês, check-ins/check-outs dos próximos
+7 dias, pendências abertas — tudo calculado a partir do que você
+cadastrar, nunca números inventados) e 14 módulos:
+
+Imóveis, Proprietários, Reservas, Calendário, Limpeza, Lavanderia,
+Enxoval, Manutenção, Prestadores, Financeiro, Comissões, Repasses,
+Onboarding e Pendências.
+
+Para não criar 14 telas diferentes (e por isso mais fácil de manter),
+esses módulos usam um mesmo formulário/tabela "genérico", configurado por
+uma lista de campos para cada um — o mesmo padrão visual em todos, como
+pedido. Testei criando um imóvel e depois uma reserva vinculada a ele: o
+painel imediatamente mostrou "1 imóvel administrado" e a reserva
+apareceu certinha em "Check-ins próximos" e "Check-outs próximos".
+
+**Duas simplificações que fiz conscientemente, dado o tamanho do
+pedido — vale saber:**
+- **Calendário** é uma lista dos próximos eventos (check-ins, check-outs,
+  limpezas, manutenções) ordenada por data, não uma grade de calendário
+  visual completa como a imagem de referência mostrava.
+- O **Dashboard** não tem o gráfico de barras de receita nem a grade
+  semanal visual da referência — tem os indicadores e a lista de
+  próximas atividades, que cobrem a mesma necessidade de forma mais
+  simples de manter.
+
+Se fizer sentido, dá para evoluir essas duas partes numa próxima rodada.
+
+### O que não foi tocado
+
+Tela de login (`LoginScreen.jsx`) — ficou com o visual anterior, já que
+não foi mencionada explicitamente e mexer nela tem risco maior (é a
+porta de entrada do sistema). Todo o resto — cálculos, PDFs, Histórico,
+Parceria, Base de Comparáveis, importação/exportação — confirmado por
+diff direto no código: nenhuma função entre `ComparableForm` e
+`ParceriaScreen` mudou uma linha sequer.
+
 ## Atualização: importação de comparáveis via Excel (migração entre versões)
 
 Nova funcionalidade pontual em Base de Comparáveis — não tocou em nenhum
