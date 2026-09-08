@@ -1644,6 +1644,73 @@ function BaseScreen({ comparables, setComparables }) {
     e.target.value = "";
   };
 
+  // NOVO — Importar Excel: usa exatamente a mesma estrutura de colunas que
+  // handleExportExcel já gera (json_to_sheet, sem colunas inventadas), para
+  // que um arquivo exportado por esta ferramenta (nesta versão ou em
+  // versões futuras) possa ser recarregado depois de uma atualização do
+  // sistema. Mesma regra de não-substituição e de duplicados por `id` já
+  // usada na importação de backup JSON acima — nunca sobrescreve a base
+  // atual, só soma o que for novo.
+  const BOOL_FIELDS_COMP = ["demo", "garagem", "elevador", "varanda", "piscina", "academia", "arCondicionado", "maquinaLavar", "espacoTrabalho", "mobiliado", "superhost"];
+  const coerceBoolCell = (v) => {
+    if (typeof v === "boolean") return v;
+    if (typeof v === "number") return v !== 0;
+    if (typeof v === "string") return ["true", "verdadeiro", "1", "sim", "x"].includes(v.trim().toLowerCase());
+    return false;
+  };
+  const handleImportExcel = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(new Uint8Array(reader.result), { type: "array" });
+        const sheetName = wb.SheetNames.includes("Comparáveis") ? "Comparáveis" : wb.SheetNames[0];
+        const sheet = sheetName ? wb.Sheets[sheetName] : null;
+        const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : null;
+        if (!rows || !Array.isArray(rows) || rows.length === 0) {
+          window.alert("Não foi possível importar este arquivo. Verifique se ele foi exportado pelo sistema ou se possui o formato esperado.");
+          return;
+        }
+        const existingIds = new Set(comparables.map((c) => c.id));
+        const camposConhecidos = Object.keys(EMPTY_COMP);
+        const toAdd = [];
+        let novos = 0, duplicados = 0, invalidos = 0;
+        for (const row of rows) {
+          // Uma linha só é reconhecida como comparável se tiver ao menos um
+          // dos campos que identificam um imóvel (não apaga nem inventa nada).
+          const reconhecivel = ["zona", "bairro", "tipo", "diaria", "regiao"].some((k) => row[k] !== undefined && row[k] !== "");
+          if (!reconhecivel) { invalidos++; continue; }
+          const comp = { ...EMPTY_COMP };
+          for (const key of camposConhecidos) {
+            if (row[key] === undefined) continue; // campo ausente na planilha: mantém o padrão já usado pelo sistema
+            comp[key] = BOOL_FIELDS_COMP.includes(key) ? coerceBoolCell(row[key]) : row[key];
+          }
+          comp.demo = row.demo !== undefined ? coerceBoolCell(row.demo) : false;
+          comp.id = row.id !== undefined && row.id !== "" ? String(row.id) : uid();
+          if (existingIds.has(comp.id)) { duplicados++; continue; }
+          existingIds.add(comp.id);
+          toAdd.push(comp);
+          novos++;
+        }
+        if (novos === 0 && duplicados === 0) {
+          window.alert("Não foi possível importar este arquivo. Verifique se ele foi exportado pelo sistema ou se possui o formato esperado.");
+          return;
+        }
+        if (toAdd.length > 0) setComparables([...comparables, ...toAdd]);
+        const linhas = [`${rows.length} registro(s) encontrado(s)`, `${novos} novo(s) comparável(is) adicionado(s)`, `${duplicados} já existente(s) e ignorado(s)`];
+        if (invalidos > 0) linhas.push(`${invalidos} ignorado(s) por estrutura inválida`);
+        const titulo = invalidos > 0 && novos > 0 ? "Importação concluída parcialmente" : "Importação concluída";
+        window.alert(`${titulo}\n\n${linhas.join("\n")}`);
+      } catch (err) {
+        window.alert("Não foi possível importar este arquivo. Verifique se ele foi exportado pelo sistema ou se possui o formato esperado.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  };
+
   return (
     <div>
       <div className="spread">
@@ -1661,6 +1728,10 @@ function BaseScreen({ comparables, setComparables }) {
         <label className="btn-file" style={{ padding: "6px 12px", fontSize: 12, fontWeight: 400 }}>
           Importar base (JSON)
           <input type="file" accept="application/json" onChange={handleImportBase} />
+        </label>
+        <label className="btn-file" style={{ padding: "6px 12px", fontSize: 12, fontWeight: 400 }}>
+          📥 Importar Excel
+          <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} />
         </label>
       </div>
 

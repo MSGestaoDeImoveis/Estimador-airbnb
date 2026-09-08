@@ -176,6 +176,66 @@ cada página do estudo vira uma página própria do PDF (evita cortar
 cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
 comparáveis individuais, scores, pesos ou custos internos.
 
+## Atualização: importação de comparáveis via Excel (migração entre versões)
+
+Nova funcionalidade pontual em Base de Comparáveis — não tocou em nenhum
+outro módulo (Estudo de Potencial, Parceria com Corretores, Histórico,
+Configurações, cálculos, PDFs).
+
+- Novo botão **"📥 Importar Excel"**, ao lado dos botões de exportação
+  que já existiam, aceitando `.xlsx` e `.xls`.
+- Usa exatamente a mesma estrutura de colunas que o "Exportar tudo
+  (Excel)" já existente gera (mesma biblioteca `xlsx`, já usada no
+  projeto — não instalei nada novo) — um arquivo exportado por esta
+  ferramenta é o formato oficial de intercâmbio para essa importação.
+- **Nunca substitui a base atual** — só soma: compara pelo campo `id` de
+  cada linha, ignora os que já existem, e adiciona só os novos. Uma
+  linha sem `id` recebe um novo id (mesmo padrão `uid()` que o sistema já
+  usa ao cadastrar um comparável manualmente).
+- Linhas sem nenhum campo reconhecível (zona/bairro/tipo/diária/região)
+  são ignoradas sem interromper a importação dos demais registros, e o
+  aviso final informa quantos foram encontrados, adicionados, ignorados
+  por já existirem, e ignorados por estrutura inválida — com a
+  mensagem "Não foi possível importar este arquivo…" reservada para
+  quando o arquivo inteiro não tem nada reconhecível.
+- Só mexe na base de comparáveis — configurações, custos, comissão e
+  demais dados não são tocados por essa importação.
+
+### Testes realizados (todos os 7 do pedido, num navegador real)
+
+Rodei os testes dentro de uma mesma sessão de navegador de cada vez —
+importante porque a base de demonstração gera IDs aleatórios novos a
+cada carregamento do sistema pela primeira vez, então comparar
+"exportado nesta sessão" com "importado nesta mesma sessão" é o teste
+que realmente valida a detecção de duplicados.
+
+1. **Excel completo**: exportei a base (30 registros) e reimportei o
+   mesmo arquivo → 0 novos, 30 já existentes. ✅
+2. **Excel só com novos**: planilha mínima (só zona/tipo/diária/padrão/
+   quartos, sem id) com 2 imóveis inéditos → 2 novos adicionados. ✅
+3. **Excel misto**: 30 existentes + 2 novos + 1 linha totalmente vazia →
+   2 novos, 30 ignorados por já existir, 1 ignorado por estrutura
+   inválida. ✅
+4. **Configurações**: comparei os valores de Configurações antes e
+   depois de uma importação → idênticos. ✅
+5. **Arquivo inválido**: uma planilha sem nenhuma coluna reconhecível →
+   mensagem "Não foi possível importar este arquivo…" e a base
+   permaneceu com o mesmo número de linhas. ✅
+6. **Campos vazios**: a planilha do teste 2 tinha várias colunas
+   totalmente ausentes (banheiros, área, etc.) e não gerou erro. ✅
+7. **Reimportação**: reimportei duas vezes seguidas o mesmo arquivo já
+   exportado pelo sistema (com id em todas as linhas) → 0 novos em
+   ambas as vezes. ✅ (uma observação importante sobre isso abaixo)
+
+**Observação sobre linhas sem `id`:** se uma planilha tiver linhas sem
+`id` (por exemplo, criada à mão fora do sistema) e for importada mais de
+uma vez, cada importação vai gerar um novo id para essas linhas
+específicas e, portanto, duplicá-las — isso é exatamente o comportamento
+que o próprio pedido descreveu como aceitável na ausência de "uma forma
+segura de identificação" (seção 7). Isso só afeta linhas sem `id`; um
+arquivo exportado pelo próprio sistema sempre tem `id` em todas as
+linhas e nunca duplica, como confirmado no teste 7 acima.
+
 ## Atualização: proposta de parceria mais persuasiva + correção do espaçamento vertical do PDF
 
 Atualização pontual sobre a Proposta de Parceria — mesma identidade
