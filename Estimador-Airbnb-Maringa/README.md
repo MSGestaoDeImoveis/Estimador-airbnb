@@ -176,6 +176,80 @@ cada página do estudo vira uma página própria do PDF (evita cortar
 cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
 comparáveis individuais, scores, pesos ou custos internos.
 
+## Atualização (v2.3): Gestão de Imóveis vira uma Central Operacional integrada
+
+Esta atualização foi **só funcional** — nenhuma mudança visual, nenhum
+toque nos módulos 01–07, nos PDFs, nos cálculos, ou nas
+importações/exportações existentes. Confirmei isso da forma mais direta
+possível: comparei o código inteiro, do início do arquivo até o fim da
+Parceria com Corretores, entre a versão anterior e esta — **são
+idênticos, linha por linha**. Só a seção da Gestão de Imóveis (que vem
+depois) foi reescrita.
+
+Seus dados da v2.2 continuam intactos: os novos campos foram só
+adicionados às fichas que já existiam (nenhum campo antigo foi
+removido), então um imóvel cadastrado antes continua aparecendo
+normalmente, só com os campos novos em branco até você preencher.
+
+**O que mudou de verdade:**
+
+- **Relações entre módulos**: reserva aparece automaticamente no
+  calendário (sem cadastrar de novo); limpeza pode ser vinculada à
+  reserva que gerou o check-out; manutenção pode ser vinculada a um
+  prestador cadastrado; comissão e repasse têm o cálculo automático
+  (comissão = receita × percentual; repasse líquido = receita − despesas
+  − comissão) — testei os dois e conferi a conta manualmente.
+- **Busca e filtros** em Imóveis, Reservas e outros módulos com campos
+  relevantes (status, tipo, região, proprietário).
+- **Tela de detalhes** de Imóvel (próximo check-in/check-out, limpeza,
+  manutenções abertas, pendências, financeiro e progresso do onboarding
+  daquele imóvel) e de Proprietário (imóveis vinculados + repasses).
+- **Calendário** deixou de ser uma lista e virou um **grid mensal de
+  verdade**, com navegação entre meses, mostrando check-ins, check-outs,
+  limpezas, manutenções e lavanderia por dia.
+- **Onboarding** virou um checklist real de 20 etapas agrupadas em 5
+  blocos (Documentação, Imóvel, Anúncio, Operação, Ativação), por
+  imóvel, com progresso calculado automaticamente — testei marcando 2
+  de 20 e o sistema mostrou exatamente "10%".
+- **Enxoval** calcula "Repor" automaticamente quando a quantidade atual
+  fica abaixo do estoque mínimo.
+- **Pendências** com prazo e detecção automática de atraso (prazo
+  vencido + não concluída).
+- **Dashboard**: além dos indicadores que já existiam, agora mostra
+  receita/despesas/resultado do mês, repasses pendentes, manutenções
+  abertas, imóveis em onboarding e pendências atrasadas — todos
+  calculados a partir dos dados reais cadastrados (nunca inventados). Os
+  botões "Ações rápidas" (novo imóvel, nova reserva, nova pendência,
+  nova manutenção) abrem o formulário correspondente direto, sem
+  duplicar a lógica dos formulários já existentes.
+
+**Um bug que encontrei e corrigi durante os próprios testes:** campos de
+quantidade (como "quantidade atual" em Enxoval) estavam sendo formatados
+como dinheiro ("R$ 2" em vez de "2") porque a tabela genérica tratava
+todo campo numérico como valor monetário. Corrigi para só formatar como
+R$ os campos que realmente são financeiros (receita, despesa, comissão,
+valor da reserva, custo, taxas). Também encontrei e corrigi um segundo
+bug: o card de "Onboarding" no acesso rápido do painel aparecia sem
+título, porque esse módulo não tem uma ficha de cadastro genérica (é uma
+tela própria) e o rótulo não tinha sido registrado para ele.
+
+### Testes realizados (roteiro completo das 17 etapas pedidas, num navegador real)
+
+Cadastrei um proprietário → um imóvel vinculado a ele → uma reserva →
+confirmei que ela apareceu no calendário → criei uma limpeza vinculada
+à reserva → uma manutenção → um prestador vinculado à manutenção → um
+item de enxoval (testei a reposição automática) → uma pendência → uma
+receita e uma despesa (conferi o resultado: R$ 1.200 − R$ 150 = R$
+1.050) → uma comissão (conferi o cálculo: 20% de R$ 1.200 = R$ 240) →
+um repasse (conferi o líquido: 1.200 − 150 − 240 = R$ 810) → chequei o
+Dashboard → recarreguei a página → confirmei que tudo continuou lá,
+incluindo o checklist de onboarding marcado.
+
+Depois disso, testei isolamento (criar um imóvel na Gestão não mexeu
+nem em 1 comparável nem em nenhuma configuração) e regressão completa
+(Análise Rápida, Estudo em PDF de 6 páginas, Histórico, Proposta de
+Parceria em PDF de 7 páginas — todos funcionando exatamente como antes).
+
 ## Atualização: modernização visual da plataforma + nova aba "Gestão de Imóveis"
 
 Esta foi a maior atualização até agora, então vale ler com calma antes de

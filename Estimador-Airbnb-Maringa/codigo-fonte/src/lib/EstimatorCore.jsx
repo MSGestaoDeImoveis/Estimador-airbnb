@@ -3018,18 +3018,17 @@ function ParceriaScreen({ config, setConfig, onGerarCodigo, onExportPdf, exporti
 }
 
 /* =========================================================================
-   GESTÃO DE IMÓVEIS
-   (NOVO — módulo independente e isolado, inspirado na planilha de gestão
-   operacional fornecida como referência. Não reutiliza nem altera nenhuma
-   estrutura de dados existente (comparáveis, análises, configurações,
-   parceria) — tem sua própria persistência (`gestaoImoveis` no
-   localStorage) e sua própria lógica. Um erro aqui não afeta o restante
-   do sistema. Segue a mesma linguagem visual dos demais módulos (card,
-   rmi-table, rmi-input, btn) para não criar um estilo à parte.)
+   GESTÃO DE IMÓVEIS — v2.3, evolução funcional sobre a v2.2
+   (Módulo independente e isolado — persistência própria em `gestaoImoveis`
+   no localStorage, sem tocar em comparáveis, análises, configurações,
+   apresentação, histórico ou parceria. Mesma linguagem visual da v2.2
+   (nenhuma modernização visual nesta versão) — card, rmi-table, rmi-input,
+   btn. Os schemas abaixo só ADICIONAM campos aos que já existiam na v2.2;
+   nenhum campo antigo foi removido, então registros já salvos continuam
+   válidos e aparecem normalmente, só com os campos novos em branco até
+   serem preenchidos — sem necessidade de migração ativa.)
    ========================================================================= */
 
-// Estrutura declarativa dos 12 módulos com CRUD simples (Dashboard,
-// Reservas/Calendário e Financeiro têm telas próprias, descritas abaixo).
 const GESTAO_SCHEMAS = {
   imoveis: {
     label: "Imóveis", displayField: "nome",
@@ -3038,86 +3037,100 @@ const GESTAO_SCHEMAS = {
       { key: "endereco", label: "Endereço", type: "text" },
       { key: "bairro", label: "Bairro", type: "text" },
       { key: "regiao", label: "Região", type: "text" },
-      { key: "tipo", label: "Tipo", type: "select", options: ["Apartamento", "Casa", "Kitnet/Studio", "Casa de condomínio", "Outro"] },
+      { key: "tipo", label: "Tipo", type: "select", options: ["Apartamento", "Casa", "Kitnet/Studio", "Casa de condomínio", "Outro"], filterable: true },
       { key: "quartos", label: "Quartos", type: "number" },
       { key: "banheiros", label: "Banheiros", type: "number" },
       { key: "camas", label: "Camas", type: "number" },
       { key: "capacidade", label: "Capacidade", type: "number" },
-      { key: "proprietarioId", label: "Proprietário", type: "ref", ref: "proprietarios" },
-      { key: "status", label: "Status", type: "select", options: ["Ativo", "Onboarding", "Inativo"] },
+      { key: "proprietarioId", label: "Proprietário", type: "ref", ref: "proprietarios", filterable: true },
+      { key: "status", label: "Status", type: "select", options: ["Ativo", "Onboarding", "Inativo"], filterable: true },
+      { key: "telefoneOperacional", label: "Telefone operacional", type: "text" },
+      { key: "inicioGestao", label: "Início da gestão", type: "date" },
+      { key: "percentualComissao", label: "% de comissão", type: "number" },
+      { key: "informacoesAcesso", label: "Informações de acesso", type: "textarea" },
+      { key: "observacoesInternas", label: "Observações internas", type: "textarea" },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
     columns: ["nome", "bairro", "tipo", "status"],
+    searchable: ["nome", "endereco", "bairro"],
   },
   proprietarios: {
     label: "Proprietários", displayField: "nome",
     fields: [
       { key: "nome", label: "Nome", type: "text", required: true },
       { key: "telefone", label: "Telefone", type: "text" },
+      { key: "whatsapp", label: "WhatsApp", type: "text" },
       { key: "email", label: "E-mail", type: "text" },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
     columns: ["nome", "telefone", "email"],
+    searchable: ["nome", "telefone", "email"],
   },
   reservas: {
     label: "Reservas", displayField: "hospede",
     fields: [
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
       { key: "hospede", label: "Hóspede", type: "text" },
+      { key: "contato", label: "Contato do hóspede", type: "text" },
       { key: "checkin", label: "Check-in", type: "date" },
       { key: "checkout", label: "Check-out", type: "date" },
       { key: "plataforma", label: "Plataforma", type: "select", options: ["Airbnb", "Booking", "Direto", "Outro"] },
-      { key: "status", label: "Status", type: "select", options: ["Confirmada", "Pendente", "Cancelada", "Concluída"] },
-      { key: "valor", label: "Valor (R$)", type: "number" },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Confirmada", "Check-in realizado", "Check-out realizado", "Cancelada"], filterable: true },
+      { key: "valor", label: "Valor da reserva (R$)", type: "number", money: true },
+      { key: "taxas", label: "Taxas (R$)", type: "number", money: true },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
     columns: ["imovelId", "hospede", "checkin", "checkout", "status"],
+    searchable: ["hospede"],
   },
   limpeza: {
     label: "Limpeza", displayField: "data",
     fields: [
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
+      { key: "reservaId", label: "Reserva relacionada (check-out)", type: "ref", ref: "reservas" },
       { key: "data", label: "Data", type: "date" },
       { key: "horario", label: "Horário", type: "text" },
       { key: "responsavel", label: "Responsável", type: "text" },
-      { key: "status", label: "Status", type: "select", options: ["Pendente", "Agendada", "Em andamento", "Concluída"] },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Agendada", "Em andamento", "Concluída"], filterable: true },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
     columns: ["imovelId", "data", "responsavel", "status"],
   },
   lavanderia: {
-    label: "Lavanderia", displayField: "dataEnvio",
+    label: "Lavanderia", displayField: "envio",
     fields: [
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
-      { key: "dataEnvio", label: "Data de envio", type: "date" },
-      { key: "dataRecebimento", label: "Data de recebimento", type: "date" },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
+      { key: "envio", label: "Data de envio", type: "date" },
+      { key: "recebimento", label: "Data de recebimento", type: "date" },
       { key: "quantidade", label: "Quantidade", type: "number" },
-      { key: "status", label: "Status", type: "select", options: ["Enviado", "Em processamento", "Recebido"] },
+      { key: "responsavel", label: "Responsável", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Enviado", "Em processamento", "Recebido", "Concluído"], filterable: true },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
-    columns: ["imovelId", "dataEnvio", "quantidade", "status"],
+    columns: ["imovelId", "envio", "quantidade", "status"],
   },
   enxoval: {
     label: "Enxoval", displayField: "item",
     fields: [
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
       { key: "item", label: "Item", type: "text" },
-      { key: "quantidade", label: "Quantidade", type: "number" },
+      { key: "quantidadeNecessaria", label: "Quantidade necessária", type: "number" },
+      { key: "quantidadeAtual", label: "Quantidade atual", type: "number" },
       { key: "estoqueMinimo", label: "Estoque mínimo", type: "number" },
-      { key: "status", label: "Status", type: "select", options: ["OK", "Repor"] },
+      { key: "observacoes", label: "Observações", type: "textarea" },
     ],
-    columns: ["imovelId", "item", "quantidade", "status"],
+    columns: ["imovelId", "item", "quantidadeAtual", "_reposicao"],
   },
   manutencao: {
     label: "Manutenção", displayField: "problema",
     fields: [
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
       { key: "problema", label: "Problema", type: "text" },
       { key: "data", label: "Data", type: "date" },
-      { key: "prioridade", label: "Prioridade", type: "select", options: ["Baixa", "Média", "Alta", "Urgente"] },
+      { key: "prioridade", label: "Prioridade", type: "select", options: ["Baixa", "Média", "Alta", "Urgente"], filterable: true },
       { key: "prestadorId", label: "Prestador", type: "ref", ref: "prestadores" },
-      { key: "status", label: "Status", type: "select", options: ["Aberta", "Em andamento", "Concluída"] },
-      { key: "custo", label: "Custo (R$)", type: "number" },
+      { key: "status", label: "Status", type: "select", options: ["Aberta", "Em análise", "Agendada", "Em andamento", "Concluída", "Cancelada"], filterable: true },
+      { key: "custo", label: "Custo (R$)", type: "number", money: true },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
     columns: ["imovelId", "problema", "prioridade", "status"],
@@ -3126,66 +3139,68 @@ const GESTAO_SCHEMAS = {
     label: "Prestadores", displayField: "nome",
     fields: [
       { key: "nome", label: "Nome", type: "text", required: true },
-      { key: "servico", label: "Serviço", type: "text" },
+      { key: "categoria", label: "Categoria/Serviço", type: "text" },
       { key: "telefone", label: "Telefone", type: "text" },
+      { key: "whatsapp", label: "WhatsApp", type: "text" },
       { key: "contato", label: "Contato adicional", type: "text" },
+      { key: "regiao", label: "Região de atuação", type: "text" },
+      { key: "disponibilidade", label: "Disponibilidade", type: "text" },
+      { key: "emergencia", label: "Atende emergência?", type: "select", options: ["Sim", "Não"] },
       { key: "status", label: "Status", type: "select", options: ["Ativo", "Inativo"] },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
-    columns: ["nome", "servico", "telefone", "status"],
+    columns: ["nome", "categoria", "telefone", "status"],
+    searchable: ["nome", "categoria"],
   },
   comissoes: {
     label: "Comissões", displayField: "periodo",
     fields: [
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
+      { key: "reservaId", label: "Reserva relacionada", type: "ref", ref: "reservas" },
       { key: "periodo", label: "Período", type: "text" },
-      { key: "valorGerido", label: "Valor gerido (R$)", type: "number" },
-      { key: "comissao", label: "Comissão (R$)", type: "number" },
-      { key: "status", label: "Status", type: "select", options: ["Pendente", "Paga"] },
+      { key: "receita", label: "Receita (R$)", type: "number", money: true },
+      { key: "percentual", label: "Percentual (%)", type: "number" },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Paga"], filterable: true },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
-    columns: ["imovelId", "periodo", "comissao", "status"],
+    columns: ["imovelId", "periodo", "_comissaoCalc", "status"],
   },
   repasses: {
     label: "Repasses", displayField: "periodo",
     fields: [
-      { key: "proprietarioId", label: "Proprietário", type: "ref", ref: "proprietarios" },
+      { key: "proprietarioId", label: "Proprietário", type: "ref", ref: "proprietarios", filterable: true },
       { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
       { key: "periodo", label: "Período", type: "text" },
-      { key: "valor", label: "Valor (R$)", type: "number" },
-      { key: "status", label: "Status", type: "select", options: ["Pendente", "Pago"] },
+      { key: "receita", label: "Receita (R$)", type: "number", money: true },
+      { key: "despesas", label: "Despesas (R$)", type: "number", money: true },
+      { key: "comissao", label: "Comissão (R$)", type: "number", money: true },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Em processamento", "Pago", "Cancelado"], filterable: true },
       { key: "data", label: "Data", type: "date" },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
-    columns: ["proprietarioId", "periodo", "valor", "status"],
-  },
-  onboarding: {
-    label: "Onboarding", displayField: "etapa",
-    fields: [
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
-      { key: "etapa", label: "Etapa atual", type: "select", options: ["Documentação", "Cadastro", "Fotos", "Anúncio", "Precificação", "Operação", "Ativo"] },
-      { key: "observacoes", label: "Observações", type: "textarea" },
-    ],
-    columns: ["imovelId", "etapa"],
+    columns: ["proprietarioId", "periodo", "_liquidoCalc", "status"],
   },
   pendencias: {
     label: "Pendências", displayField: "titulo",
     fields: [
       { key: "titulo", label: "Título", type: "text", required: true },
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
-      { key: "prioridade", label: "Prioridade", type: "select", options: ["Baixa", "Média", "Alta"] },
-      { key: "status", label: "Status", type: "select", options: ["Aberta", "Concluída"] },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
+      { key: "prioridade", label: "Prioridade", type: "select", options: ["Baixa", "Média", "Alta", "Urgente"], filterable: true },
+      { key: "prazo", label: "Prazo", type: "date" },
+      { key: "responsavel", label: "Responsável", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Aberta", "Em andamento", "Concluída"], filterable: true },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
-    columns: ["titulo", "imovelId", "prioridade", "status"],
+    columns: ["titulo", "imovelId", "prazo", "_atrasada", "status"],
   },
   financeiro: {
     label: "Financeiro", displayField: "descricao",
     fields: [
-      { key: "tipo", label: "Tipo", type: "select", options: ["Receita", "Despesa"] },
-      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "tipo", label: "Tipo", type: "select", options: ["Receita", "Despesa"], filterable: true },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
+      { key: "categoria", label: "Categoria", type: "text" },
       { key: "descricao", label: "Descrição", type: "text" },
-      { key: "valor", label: "Valor (R$)", type: "number" },
+      { key: "valor", label: "Valor (R$)", type: "number", money: true },
       { key: "data", label: "Data", type: "date" },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
@@ -3195,7 +3210,7 @@ const GESTAO_SCHEMAS = {
 
 const GESTAO_MODULE_ORDER = ["imoveis", "proprietarios", "reservas", "calendario", "limpeza", "lavanderia", "enxoval", "manutencao", "prestadores", "financeiro", "comissoes", "repasses", "onboarding", "pendencias"];
 const GESTAO_MODULE_ICON = { imoveis: "building", proprietarios: "handshake", reservas: "presentation", calendario: "clock", limpeza: "grid", lavanderia: "grid", enxoval: "grid", manutencao: "gear", prestadores: "handshake", financeiro: "bolt", comissoes: "bolt", repasses: "bolt", onboarding: "book", pendencias: "gear" };
-const GESTAO_MODULE_LABEL = { ...Object.fromEntries(Object.entries(GESTAO_SCHEMAS).map(([k, v]) => [k, v.label])), calendario: "Calendário" };
+const GESTAO_MODULE_LABEL = { ...Object.fromEntries(Object.entries(GESTAO_SCHEMAS).map(([k, v]) => [k, v.label])), calendario: "Calendário", onboarding: "Onboarding" };
 const GESTAO_MODULE_DESC = {
   imoveis: "Cadastro e gerenciamento", proprietarios: "Gestão de proprietários", reservas: "Controle de reservas",
   calendario: "Agenda operacional", limpeza: "Controle de limpezas", lavanderia: "Gestão de lavanderia",
@@ -3204,12 +3219,36 @@ const GESTAO_MODULE_DESC = {
   onboarding: "Entrada de novos imóveis", pendencias: "Acompanhamento de tarefas",
 };
 
+const ONBOARDING_GRUPOS = [
+  { grupo: "Documentação", itens: ["Contrato assinado", "Documentação do proprietário", "Cadastro do proprietário"] },
+  { grupo: "Imóvel", itens: ["Cadastro completo do imóvel", "Fotos do imóvel", "Informações registradas", "Acessos (chaves/portaria)"] },
+  { grupo: "Anúncio", itens: ["Anúncio criado", "Descrição escrita", "Fotos publicadas", "Precificação definida"] },
+  { grupo: "Operação", itens: ["Enxoval conferido", "Utensílios conferidos", "Limpeza inicial agendada", "Lavanderia definida", "Manutenção inicial verificada", "Chaves/acesso entregues à operação"] },
+  { grupo: "Ativação", itens: ["Imóvel pronto para hospedar", "Operação iniciada", "Status marcado como Ativo"] },
+];
+const ONBOARDING_TOTAL_ITENS = ONBOARDING_GRUPOS.reduce((s, g) => s + g.itens.length, 0);
+
 function gestaoRefLabel(allData, ref, id) {
   if (!id) return "—";
   const schema = GESTAO_SCHEMAS[ref];
   const item = (allData[ref] || []).find((x) => x.id === id);
   return item ? (item[schema.displayField] || "—") : "—";
 }
+function gestaoToday() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+function gestaoDaysFromToday(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.round((d - gestaoToday()) / 86400000);
+}
+function gestaoComissaoValor(rec) { return toNum(rec.receita) * (toNum(rec.percentual) / 100); }
+function gestaoRepasseLiquido(rec) { return toNum(rec.receita) - toNum(rec.despesas) - toNum(rec.comissao); }
+function gestaoPendenciaAtrasada(rec) {
+  const d = gestaoDaysFromToday(rec.prazo);
+  return d !== null && d < 0 && rec.status !== "Concluída";
+}
+
+/* --------------------------- formulário/campo genéricos --------------------------- */
 
 function GestaoField({ field, value, onChange, allData }) {
   if (field.type === "select") {
@@ -3250,6 +3289,19 @@ function GestaoForm({ moduleKey, initial, onSave, onCancel, allData }) {
           </Field>
         ))}
       </div>
+      {moduleKey === "comissoes" && toNum(item.receita) > 0 && toNum(item.percentual) > 0 && (
+        <p className="footnote" style={{ marginTop: 10 }}>Comissão calculada automaticamente: <b>{fmtMoney(gestaoComissaoValor(item))}</b> ({toNum(item.percentual)}% de {fmtMoney(toNum(item.receita))})</p>
+      )}
+      {moduleKey === "repasses" && (toNum(item.receita) > 0 || toNum(item.despesas) > 0 || toNum(item.comissao) > 0) && (
+        <p className="footnote" style={{ marginTop: 10 }}>Valor líquido calculado automaticamente: <b>{fmtMoney(gestaoRepasseLiquido(item))}</b> (receita − despesas − comissão)</p>
+      )}
+      {moduleKey === "enxoval" && item.quantidadeAtual !== undefined && item.estoqueMinimo !== undefined && String(item.quantidadeAtual) !== "" && String(item.estoqueMinimo) !== "" && (
+        <p className="footnote" style={{ marginTop: 10 }}>
+          {toNum(item.quantidadeAtual) < toNum(item.estoqueMinimo)
+            ? <span style={{ color: "var(--alert)", fontWeight: 700 }}>Reposição necessária — quantidade atual abaixo do estoque mínimo.</span>
+            : <span style={{ color: "var(--good)", fontWeight: 700 }}>Estoque OK.</span>}
+        </p>
+      )}
       <div className="hstack" style={{ marginTop: 14 }}>
         <button className="btn btn-primary" onClick={() => {
           const req = schema.fields.find((f) => f.required && !String(item[f.key] || "").trim());
@@ -3262,10 +3314,45 @@ function GestaoForm({ moduleKey, initial, onSave, onCancel, allData }) {
   );
 }
 
-function GestaoCrudScreen({ moduleKey, allData, setModuleData }) {
+// Renderiza o valor de uma coluna, incluindo as colunas calculadas (prefixo "_")
+function gestaoCellValue(allData, schema, moduleKey, it, c) {
+  if (c === "_reposicao") {
+    if (it.quantidadeAtual === undefined || it.estoqueMinimo === undefined || it.quantidadeAtual === "" || it.estoqueMinimo === "") return "—";
+    return toNum(it.quantidadeAtual) < toNum(it.estoqueMinimo)
+      ? <span style={{ color: "var(--alert)", fontWeight: 700 }}>Repor</span>
+      : <span style={{ color: "var(--good)", fontWeight: 700 }}>OK</span>;
+  }
+  if (c === "_comissaoCalc") return fmtMoney(gestaoComissaoValor(it));
+  if (c === "_liquidoCalc") return fmtMoney(gestaoRepasseLiquido(it));
+  if (c === "_atrasada") return gestaoPendenciaAtrasada(it) ? <span style={{ color: "var(--alert)", fontWeight: 700 }}>Atrasada</span> : "—";
+  const field = schema.fields.find((f) => f.key === c);
+  if (!field) return it[c] || "—";
+  if (field.type === "ref") return gestaoRefLabel(allData, field.ref, it[c]);
+  if (field.type === "number" && field.money && it[c] !== undefined && it[c] !== "") return fmtMoney(toNum(it[c]));
+  return it[c] || "—";
+}
+
+function GestaoCrudScreen({ moduleKey, allData, setModuleData, onOpenDetail, autoNew, onAutoNewHandled }) {
   const schema = GESTAO_SCHEMAS[moduleKey];
-  const [editing, setEditing] = useState(null); // null | 'new' | item
+  const [editing, setEditing] = useState(autoNew ? "new" : null);
+  const [busca, setBusca] = useState("");
+  const [filtros, setFiltros] = useState({});
   const items = allData[moduleKey] || [];
+
+  useEffect(() => { if (autoNew) { setEditing("new"); onAutoNewHandled && onAutoNewHandled(); } }, [autoNew]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filterableFields = schema.fields.filter((f) => f.filterable);
+  const filtered = items.filter((it) => {
+    if (busca.trim() && schema.searchable) {
+      const q = busca.trim().toLowerCase();
+      const matches = schema.searchable.some((k) => String(it[k] || "").toLowerCase().includes(q));
+      if (!matches) return false;
+    }
+    for (const f of filterableFields) {
+      if (filtros[f.key] && String(it[f.key] || "") !== filtros[f.key]) return false;
+    }
+    return true;
+  });
 
   const handleSave = (item) => {
     const exists = items.some((x) => x.id === item.id);
@@ -3273,7 +3360,7 @@ function GestaoCrudScreen({ moduleKey, allData, setModuleData }) {
     setEditing(null);
   };
   const handleDelete = (id) => {
-    if (!window.confirm("Excluir este registro?")) return;
+    if (!window.confirm("Excluir este registro? Isso não afeta outros módulos, mas referências a ele passarão a mostrar \"—\".")) return;
     setModuleData(moduleKey, items.filter((x) => x.id !== id));
   };
 
@@ -3291,26 +3378,45 @@ function GestaoCrudScreen({ moduleKey, allData, setModuleData }) {
       {editing === "new" && <GestaoForm moduleKey={moduleKey} onSave={handleSave} onCancel={() => setEditing(null)} allData={allData} />}
       {editing && editing !== "new" && <GestaoForm moduleKey={moduleKey} initial={editing} onSave={handleSave} onCancel={() => setEditing(null)} allData={allData} />}
 
+      {editing === null && (schema.searchable || filterableFields.length > 0) && (
+        <div className="card">
+          <div className="grid g3">
+            {schema.searchable && (
+              <Field label="Buscar"><input className="rmi-input" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Digite para filtrar…" /></Field>
+            )}
+            {filterableFields.map((f) => (
+              <Field key={f.key} label={`Filtrar por ${f.label.toLowerCase()}`}>
+                <GestaoField field={f} value={filtros[f.key]} onChange={(v) => setFiltros({ ...filtros, [f.key]: v })} allData={allData} />
+              </Field>
+            ))}
+          </div>
+          {(busca || Object.values(filtros).some(Boolean)) && (
+            <button className="link-btn" style={{ marginTop: 8 }} onClick={() => { setBusca(""); setFiltros({}); }}>Limpar busca e filtros</button>
+          )}
+        </div>
+      )}
+
       <div className="card" style={{ marginTop: 16 }}>
         <table className="rmi-table">
           <thead>
-            <tr>{schema.columns.map((c) => <th key={c}>{schema.fields.find((f) => f.key === c)?.label || c}</th>)}<th></th></tr>
+            <tr>{schema.columns.map((c) => <th key={c}>{c.startsWith("_") ? (c === "_reposicao" ? "Estoque" : c === "_comissaoCalc" ? "Comissão" : c === "_liquidoCalc" ? "Líquido" : c === "_atrasada" ? "" : c) : (schema.fields.find((f) => f.key === c)?.label || c)}</th>)}<th></th></tr>
           </thead>
           <tbody>
-            {items.map((it) => (
+            {filtered.map((it) => (
               <tr key={it.id}>
-                {schema.columns.map((c) => {
-                  const field = schema.fields.find((f) => f.key === c);
-                  const val = field && field.type === "ref" ? gestaoRefLabel(allData, field.ref, it[c]) : (field && field.type === "number" && it[c] !== undefined && it[c] !== "" ? fmtMoney(toNum(it[c])) : (it[c] || "—"));
-                  return <td key={c}>{val}</td>;
-                })}
+                {schema.columns.map((c) => <td key={c}>{gestaoCellValue(allData, schema, moduleKey, it, c)}</td>)}
                 <td className="hstack">
+                  {onOpenDetail && (moduleKey === "imoveis" || moduleKey === "proprietarios") && <button className="link-btn" onClick={() => onOpenDetail(moduleKey, it.id)}>detalhes</button>}
                   <button className="link-btn" onClick={() => setEditing(it)}>editar</button>
                   <button className="link-btn" style={{ color: "var(--alert)" }} onClick={() => handleDelete(it.id)}>excluir</button>
                 </td>
               </tr>
             ))}
-            {items.length === 0 && <tr><td colSpan={schema.columns.length + 1} className="footnote" style={{ padding: 16 }}>Nenhum registro ainda.</td></tr>}
+            {filtered.length === 0 && (
+              <tr><td colSpan={schema.columns.length + 1} className="footnote" style={{ padding: 16 }}>
+                {items.length === 0 ? `Nenhum registro cadastrado ainda. Clique em "+ Novo" para começar.` : "Nenhum registro encontrado com essa busca/filtro."}
+              </td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -3318,85 +3424,305 @@ function GestaoCrudScreen({ moduleKey, allData, setModuleData }) {
   );
 }
 
-// Calendário — visão simplificada em lista dos próximos eventos operacionais
-// (reservas, limpezas, manutenções), agrupados por data. Não é um grid de
-// calendário completo — ver observação na entrega.
+/* --------------------------- detalhes de imóvel / proprietário --------------------------- */
+
+function GestaoImovelDetail({ imovelId, allData, onVoltar }) {
+  const imovel = (allData.imoveis || []).find((x) => x.id === imovelId);
+  if (!imovel) return <div><button className="link-btn" onClick={onVoltar}>← Voltar</button><p className="footnote" style={{ marginTop: 12 }}>Imóvel não encontrado.</p></div>;
+  const reservas = (allData.reservas || []).filter((r) => r.imovelId === imovelId).sort((a, b) => String(a.checkin || "").localeCompare(String(b.checkin || "")));
+  const proximaReserva = reservas.find((r) => { const d = gestaoDaysFromToday(r.checkin); return d !== null && d >= 0; });
+  const proximaLimpeza = (allData.limpeza || []).filter((l) => l.imovelId === imovelId && l.status !== "Concluída").sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")))[0];
+  const manutencaoAberta = (allData.manutencao || []).filter((m) => m.imovelId === imovelId && m.status !== "Concluída" && m.status !== "Cancelada");
+  const pendencias = (allData.pendencias || []).filter((p) => p.imovelId === imovelId && p.status !== "Concluída");
+  const financeiro = (allData.financeiro || []).filter((f) => f.imovelId === imovelId);
+  const receitas = financeiro.filter((f) => f.tipo === "Receita").reduce((s, f) => s + toNum(f.valor), 0);
+  const despesas = financeiro.filter((f) => f.tipo === "Despesa").reduce((s, f) => s + toNum(f.valor), 0);
+  const onboardingChecklist = (allData.onboardingChecklists || {})[imovelId] || {};
+  const concluidas = Object.values(onboardingChecklist).filter(Boolean).length;
+
+  return (
+    <div>
+      <button className="link-btn" onClick={onVoltar}>← Voltar para Imóveis</button>
+      <h1 className="page-title" style={{ marginTop: 10 }}>{imovel.nome}</h1>
+      <p className="page-sub">{imovel.tipo} · {imovel.bairro || "—"} · {gestaoRefLabel(allData, "proprietarios", imovel.proprietarioId)} · Status: {imovel.status || "—"}</p>
+
+      <div className="grid g3">
+        <div className="card">
+          <div className="card-title">Operação</div>
+          <div className="footnote">Próximo check-in: <b style={{ color: "var(--ink)" }}>{proximaReserva ? proximaReserva.checkin : "—"}</b></div>
+          <div className="footnote">Próxima limpeza: <b style={{ color: "var(--ink)" }}>{proximaLimpeza ? proximaLimpeza.data : "—"}</b></div>
+          <div className="footnote">Manutenções abertas: <b style={{ color: "var(--ink)" }}>{manutencaoAberta.length}</b></div>
+          <div className="footnote">Pendências abertas: <b style={{ color: "var(--ink)" }}>{pendencias.length}</b></div>
+        </div>
+        <div className="card">
+          <div className="card-title">Financeiro</div>
+          <div className="footnote">Receitas: <b style={{ color: "var(--good)" }}>{fmtMoney(receitas)}</b></div>
+          <div className="footnote">Despesas: <b style={{ color: "var(--alert)" }}>{fmtMoney(despesas)}</b></div>
+          <div className="footnote">Resultado: <b style={{ color: "var(--ink)" }}>{fmtMoney(receitas - despesas)}</b></div>
+        </div>
+        <div className="card">
+          <div className="card-title">Onboarding</div>
+          <div className="footnote">{concluidas} de {ONBOARDING_TOTAL_ITENS} etapas concluídas</div>
+          <div className="footnote"><b style={{ color: "var(--ink)" }}>{ONBOARDING_TOTAL_ITENS > 0 ? Math.round((concluidas / ONBOARDING_TOTAL_ITENS) * 100) : 0}%</b></div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="card-title">Próximas reservas</div>
+        <table className="rmi-table">
+          <thead><tr><th>Hóspede</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead>
+          <tbody>
+            {reservas.map((r) => <tr key={r.id}><td>{r.hospede || "—"}</td><td>{r.checkin}</td><td>{r.checkout}</td><td>{r.status}</td></tr>)}
+            {reservas.length === 0 && <tr><td colSpan={4} className="footnote" style={{ padding: 16 }}>Nenhuma reserva cadastrada para este imóvel.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function GestaoProprietarioDetail({ proprietarioId, allData, onVoltar }) {
+  const prop = (allData.proprietarios || []).find((x) => x.id === proprietarioId);
+  if (!prop) return <div><button className="link-btn" onClick={onVoltar}>← Voltar</button><p className="footnote" style={{ marginTop: 12 }}>Proprietário não encontrado.</p></div>;
+  const imoveis = (allData.imoveis || []).filter((i) => i.proprietarioId === proprietarioId);
+  const repasses = (allData.repasses || []).filter((r) => r.proprietarioId === proprietarioId);
+  return (
+    <div>
+      <button className="link-btn" onClick={onVoltar}>← Voltar para Proprietários</button>
+      <h1 className="page-title" style={{ marginTop: 10 }}>{prop.nome}</h1>
+      <p className="page-sub">{prop.telefone || "—"} · {prop.email || "—"}</p>
+      <div className="card">
+        <div className="card-title">Imóveis vinculados</div>
+        <table className="rmi-table">
+          <thead><tr><th>Imóvel</th><th>Tipo</th><th>Status</th></tr></thead>
+          <tbody>
+            {imoveis.map((i) => <tr key={i.id}><td>{i.nome}</td><td>{i.tipo}</td><td>{i.status}</td></tr>)}
+            {imoveis.length === 0 && <tr><td colSpan={3} className="footnote" style={{ padding: 16 }}>Nenhum imóvel vinculado a este proprietário ainda.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="card-title">Repasses</div>
+        <table className="rmi-table">
+          <thead><tr><th>Período</th><th>Valor líquido</th><th>Status</th></tr></thead>
+          <tbody>
+            {repasses.map((r) => <tr key={r.id}><td>{r.periodo}</td><td>{fmtMoney(gestaoRepasseLiquido(r))}</td><td>{r.status}</td></tr>)}
+            {repasses.length === 0 && <tr><td colSpan={3} className="footnote" style={{ padding: 16 }}>Nenhum repasse registrado ainda.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------- calendário mensal --------------------------- */
+
 function GestaoCalendarioScreen({ allData }) {
-  const eventos = [];
+  const [ref, setRef] = useState(() => { const d = new Date(); return { ano: d.getFullYear(), mes: d.getMonth() }; });
+  const eventosPorDia = {};
+  const push = (data, tipo, desc) => { if (!data) return; (eventosPorDia[data] = eventosPorDia[data] || []).push({ tipo, desc }); };
   (allData.reservas || []).forEach((r) => {
-    if (r.checkin) eventos.push({ data: r.checkin, tipo: "Check-in", desc: `${gestaoRefLabel(allData, "imoveis", r.imovelId)} — ${r.hospede || ""}` });
-    if (r.checkout) eventos.push({ data: r.checkout, tipo: "Check-out", desc: `${gestaoRefLabel(allData, "imoveis", r.imovelId)} — ${r.hospede || ""}` });
+    push(r.checkin, "Check-in", gestaoRefLabel(allData, "imoveis", r.imovelId));
+    push(r.checkout, "Check-out", gestaoRefLabel(allData, "imoveis", r.imovelId));
   });
-  (allData.limpeza || []).forEach((l) => { if (l.data) eventos.push({ data: l.data, tipo: "Limpeza", desc: gestaoRefLabel(allData, "imoveis", l.imovelId) }); });
-  (allData.manutencao || []).forEach((m) => { if (m.data) eventos.push({ data: m.data, tipo: "Manutenção", desc: `${gestaoRefLabel(allData, "imoveis", m.imovelId)} — ${m.problema || ""}` }); });
-  eventos.sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  (allData.limpeza || []).forEach((l) => push(l.data, "Limpeza", gestaoRefLabel(allData, "imoveis", l.imovelId)));
+  (allData.manutencao || []).forEach((m) => push(m.data, "Manutenção", gestaoRefLabel(allData, "imoveis", m.imovelId)));
+  (allData.lavanderia || []).forEach((l) => push(l.envio, "Lavanderia", gestaoRefLabel(allData, "imoveis", l.imovelId)));
+
+  const cor = { "Check-in": "var(--good)", "Check-out": "var(--warm)", "Limpeza": "var(--accent)", "Manutenção": "var(--alert)", "Lavanderia": "var(--mid)" };
+
+  const first = new Date(ref.ano, ref.mes, 1);
+  const startWeekday = first.getDay();
+  const daysInMonth = new Date(ref.ano, ref.mes + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+  const mesNome = first.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const pad2 = (n) => String(n).padStart(2, "0");
 
   return (
     <div>
       <div className="eyebrow">Gestão de Imóveis</div>
       <h1 className="page-title">Calendário</h1>
-      <p className="page-sub">Visão em lista dos próximos check-ins, check-outs, limpezas e manutenções, ordenados por data.</p>
+      <p className="page-sub">Visão mensal de check-ins, check-outs, limpezas, manutenções e lavanderia — cada evento vem diretamente dos módulos correspondentes (nenhum cadastro duplicado).</p>
+
+      <div className="spread" style={{ marginBottom: 10 }}>
+        <button className="btn btn-ghost btn-sm" onClick={() => setRef((r) => { const m = r.mes - 1; return m < 0 ? { ano: r.ano - 1, mes: 11 } : { ano: r.ano, mes: m }; })}>← Mês anterior</button>
+        <div style={{ fontWeight: 700, textTransform: "capitalize" }}>{mesNome}</div>
+        <button className="btn btn-ghost btn-sm" onClick={() => setRef((r) => { const m = r.mes + 1; return m > 11 ? { ano: r.ano + 1, mes: 0 } : { ano: r.ano, mes: m }; })}>Próximo mês →</button>
+      </div>
+
       <div className="card">
-        <table className="rmi-table">
-          <thead><tr><th>Data</th><th>Tipo</th><th>Detalhe</th></tr></thead>
-          <tbody>
-            {eventos.map((e, i) => <tr key={i}><td className="rmi-mono">{e.data}</td><td>{e.tipo}</td><td>{e.desc}</td></tr>)}
-            {eventos.length === 0 && <tr><td colSpan={3} className="footnote" style={{ padding: 16 }}>Nenhum evento cadastrado ainda. Cadastre reservas, limpezas ou manutenções para vê-las aqui.</td></tr>}
-          </tbody>
-        </table>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 1, background: "var(--line)" }}>
+          {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
+            <div key={d} style={{ background: "var(--paper)", padding: "6px 8px", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: "var(--ink-faint)" }}>{d}</div>
+          ))}
+          {cells.map((d, i) => {
+            const dataStr = d ? `${ref.ano}-${pad2(ref.mes + 1)}-${pad2(d)}` : null;
+            const eventos = dataStr ? (eventosPorDia[dataStr] || []) : [];
+            return (
+              <div key={i} style={{ background: "var(--paper)", minHeight: 78, padding: "6px 6px", opacity: d ? 1 : 0.4 }}>
+                {d && <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 3 }}>{d}</div>}
+                {eventos.slice(0, 3).map((e, j) => (
+                  <div key={j} style={{ fontSize: 9.5, color: "#fff", background: cor[e.tipo] || "var(--ink-faint)", borderRadius: 3, padding: "1px 4px", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {e.tipo}: {e.desc}
+                  </div>
+                ))}
+                {eventos.length > 3 && <div className="footnote">+{eventos.length - 3} mais</div>}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
 
-function gestaoDaysFromToday(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr + "T00:00:00");
-  if (Number.isNaN(d.getTime())) return null;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return Math.round((d - today) / 86400000);
+/* --------------------------- onboarding (checklist real) --------------------------- */
+
+function GestaoOnboardingScreen({ allData, setModuleData }) {
+  const [imovelId, setImovelId] = useState("");
+  const imoveis = allData.imoveis || [];
+  const checklists = allData.onboardingChecklists || {};
+  const checklist = checklists[imovelId] || {};
+  const concluidas = Object.values(checklist).filter(Boolean).length;
+  const pct = ONBOARDING_TOTAL_ITENS > 0 ? Math.round((concluidas / ONBOARDING_TOTAL_ITENS) * 100) : 0;
+
+  const toggle = (itemKey) => {
+    const next = { ...checklists, [imovelId]: { ...checklist, [itemKey]: !checklist[itemKey] } };
+    setModuleData("onboardingChecklists", next);
+  };
+
+  return (
+    <div>
+      <div className="eyebrow">Gestão de Imóveis</div>
+      <h1 className="page-title">Onboarding</h1>
+      <p className="page-sub">Checklist de entrada de um novo imóvel na operação, agrupado por etapa. O progresso é calculado automaticamente a partir do que está marcado.</p>
+
+      <div className="card">
+        <Field label="Imóvel">
+          <select className="rmi-select" value={imovelId} onChange={(e) => setImovelId(e.target.value)}>
+            <option value="">Selecione um imóvel…</option>
+            {imoveis.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
+          </select>
+        </Field>
+      </div>
+
+      {imovelId && (
+        <>
+          <div className="card">
+            <div className="card-title">Progresso</div>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 24 }}>{concluidas} de {ONBOARDING_TOTAL_ITENS} etapas concluídas</div>
+            <div style={{ height: 8, background: "var(--line-soft)", borderRadius: 4, marginTop: 8, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: "var(--accent)" }} />
+            </div>
+            <div className="footnote" style={{ marginTop: 6 }}>{pct}%</div>
+          </div>
+
+          {ONBOARDING_GRUPOS.map((g) => (
+            <div className="card" key={g.grupo}>
+              <div className="card-title">{g.grupo.toUpperCase()}</div>
+              {g.itens.map((item) => (
+                <label className="check-row" key={item}>
+                  <input type="checkbox" checked={!!checklist[item]} onChange={() => toggle(item)} /> {item}
+                </label>
+              ))}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
 }
 
-function GestaoDashboard({ allData, setView, setGestaoModule }) {
+/* --------------------------- financeiro --------------------------- */
+
+function GestaoFinanceiroScreen({ allData, setModuleData, onOpenDetail }) {
+  const lancamentos = allData.financeiro || [];
+  const receitas = lancamentos.filter((l) => l.tipo === "Receita").reduce((s, l) => s + toNum(l.valor), 0);
+  const despesas = lancamentos.filter((l) => l.tipo === "Despesa").reduce((s, l) => s + toNum(l.valor), 0);
+  return (
+    <div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-title">Resultado (todos os lançamentos)</div>
+        <div className="grid g3">
+          <div><div className="kpi-label">Receitas</div><div style={{ fontWeight: 700, color: "var(--good)" }}>{fmtMoney(receitas)}</div></div>
+          <div><div className="kpi-label">Despesas</div><div style={{ fontWeight: 700, color: "var(--alert)" }}>{fmtMoney(despesas)}</div></div>
+          <div><div className="kpi-label">Resultado</div><div style={{ fontWeight: 700 }}>{fmtMoney(receitas - despesas)}</div></div>
+        </div>
+      </div>
+      <GestaoCrudScreen moduleKey="financeiro" allData={allData} setModuleData={setModuleData} onOpenDetail={onOpenDetail} />
+    </div>
+  );
+}
+
+/* --------------------------- dashboard --------------------------- */
+
+function GestaoDashboard({ allData, setGestaoModule, onQuickNew }) {
   const imoveis = allData.imoveis || [];
   const reservas = allData.reservas || [];
   const pendencias = allData.pendencias || [];
+  const financeiro = allData.financeiro || [];
+  const repasses = allData.repasses || [];
+  const manutencao = allData.manutencao || [];
   const hoje = new Date();
-  const reservasMes = reservas.filter((r) => {
-    if (!r.checkin) return false;
-    const d = new Date(r.checkin + "T00:00:00");
-    return !Number.isNaN(d.getTime()) && d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear();
-  }).length;
+
+  const noMes = (dateStr) => { if (!dateStr) return false; const d = new Date(dateStr + "T00:00:00"); return !Number.isNaN(d.getTime()) && d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear(); };
+  const reservasMes = reservas.filter((r) => noMes(r.checkin)).length;
   const checkinsProximos = reservas.filter((r) => { const d = gestaoDaysFromToday(r.checkin); return d !== null && d >= 0 && d <= 7; }).length;
   const checkoutsProximos = reservas.filter((r) => { const d = gestaoDaysFromToday(r.checkout); return d !== null && d >= 0 && d <= 7; }).length;
-  const pendenciasAbertas = pendencias.filter((p) => p.status === "Aberta").length;
+  const pendenciasAbertas = pendencias.filter((p) => p.status !== "Concluída").length;
+  const pendenciasAtrasadas = pendencias.filter(gestaoPendenciaAtrasada).length;
+  const receitaMes = financeiro.filter((f) => f.tipo === "Receita" && noMes(f.data)).reduce((s, f) => s + toNum(f.valor), 0);
+  const despesaMes = financeiro.filter((f) => f.tipo === "Despesa" && noMes(f.data)).reduce((s, f) => s + toNum(f.valor), 0);
+  const repassesPendentes = repasses.filter((r) => r.status === "Pendente").length;
+  const manutencoesAbertas = manutencao.filter((m) => m.status !== "Concluída" && m.status !== "Cancelada").length;
+  const imoveisOnboarding = imoveis.filter((i) => i.status === "Onboarding").length;
 
   const atividades = [];
   reservas.forEach((r) => {
     const din = gestaoDaysFromToday(r.checkin), dout = gestaoDaysFromToday(r.checkout);
-    if (din !== null && din >= 0 && din <= 7) atividades.push({ data: r.checkin, label: `Check-in — ${gestaoRefLabel(allData, "imoveis", r.imovelId)}`, status: r.status || "—" });
-    if (dout !== null && dout >= 0 && dout <= 7) atividades.push({ data: r.checkout, label: `Check-out — ${gestaoRefLabel(allData, "imoveis", r.imovelId)}`, status: r.status || "—" });
+    if (din !== null && din >= 0 && din <= 7) atividades.push({ data: r.checkin, label: `Check-in — ${gestaoRefLabel(allData, "imoveis", r.imovelId)}`, tipo: "Reserva", status: r.status || "—" });
+    if (dout !== null && dout >= 0 && dout <= 7) atividades.push({ data: r.checkout, label: `Check-out — ${gestaoRefLabel(allData, "imoveis", r.imovelId)}`, tipo: "Reserva", status: r.status || "—" });
   });
-  (allData.limpeza || []).forEach((l) => { const d = gestaoDaysFromToday(l.data); if (d !== null && d >= 0 && d <= 7) atividades.push({ data: l.data, label: `Limpeza — ${gestaoRefLabel(allData, "imoveis", l.imovelId)}`, status: l.status || "—" }); });
-  (allData.manutencao || []).forEach((m) => { const d = gestaoDaysFromToday(m.data); if (d !== null && d >= 0 && d <= 7) atividades.push({ data: m.data, label: `Manutenção — ${gestaoRefLabel(allData, "imoveis", m.imovelId)}`, status: m.status || "—" }); });
+  (allData.limpeza || []).forEach((l) => { const d = gestaoDaysFromToday(l.data); if (d !== null && d >= 0 && d <= 7) atividades.push({ data: l.data, label: `Limpeza — ${gestaoRefLabel(allData, "imoveis", l.imovelId)}`, tipo: "Limpeza", status: l.status || "—" }); });
+  manutencao.forEach((m) => { const d = gestaoDaysFromToday(m.data); if (d !== null && d >= 0 && d <= 7) atividades.push({ data: m.data, label: `Manutenção — ${gestaoRefLabel(allData, "imoveis", m.imovelId)}`, tipo: "Manutenção", status: m.status || "—", prioridade: m.prioridade }); });
+  pendencias.forEach((p) => { const d = gestaoDaysFromToday(p.prazo); if (d !== null && d >= 0 && d <= 7 && p.status !== "Concluída") atividades.push({ data: p.prazo, label: `Pendência — ${p.titulo}`, tipo: "Pendência", status: p.status || "—", prioridade: p.prioridade }); });
   atividades.sort((a, b) => String(a.data).localeCompare(String(b.data)));
 
-  const kpis = [
+  const kpisPrincipais = [
     { label: "Imóveis administrados", value: imoveis.length, icon: "building" },
     { label: "Reservas este mês", value: reservasMes, icon: "presentation" },
     { label: "Check-ins próximos (7 dias)", value: checkinsProximos, icon: "clock" },
     { label: "Check-outs próximos (7 dias)", value: checkoutsProximos, icon: "clock" },
     { label: "Pendências abertas", value: pendenciasAbertas, icon: "gear" },
   ];
+  const kpisOperacionais = [
+    { label: "Receita do mês", value: fmtMoney(receitaMes), destaque: "good" },
+    { label: "Despesas do mês", value: fmtMoney(despesaMes), destaque: "alert" },
+    { label: "Resultado do mês", value: fmtMoney(receitaMes - despesaMes) },
+    { label: "Repasses pendentes", value: repassesPendentes },
+    { label: "Manutenções abertas", value: manutencoesAbertas },
+    { label: "Imóveis em onboarding", value: imoveisOnboarding },
+    { label: "Pendências atrasadas", value: pendenciasAtrasadas, destaque: pendenciasAtrasadas > 0 ? "alert" : undefined },
+  ];
 
   return (
     <div>
       <div className="eyebrow">Gestão de Imóveis</div>
       <h1 className="page-title">Bem-vindo à Gestão de Imóveis</h1>
-      <p className="page-sub">Controle, operação e resultados da sua carteira em um único lugar. Os números abaixo vêm dos dados que você cadastrar nos módulos — comece em "Imóveis" e "Reservas".</p>
+      <p className="page-sub">Controle, operação e resultados da sua carteira em um único lugar. Os números abaixo vêm dos dados que você cadastrar nos módulos.</p>
+
+      <div className="hstack" style={{ marginBottom: 14, flexWrap: "wrap" }}>
+        <button className="btn btn-primary btn-sm" onClick={() => onQuickNew("imoveis")}>+ Novo imóvel</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => onQuickNew("reservas")}>+ Nova reserva</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => onQuickNew("pendencias")}>+ Nova pendência</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => onQuickNew("manutencao")}>+ Nova manutenção</button>
+      </div>
 
       <div className="grid g4" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
-        {kpis.map((k) => (
+        {kpisPrincipais.map((k) => (
           <div className="card" key={k.label} style={{ padding: "16px 16px" }}>
             <AppIcon name={k.icon} size={18} />
             <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: "var(--ink)", marginTop: 8 }}>{k.value}</div>
@@ -3406,12 +3732,24 @@ function GestaoDashboard({ allData, setView, setGestaoModule }) {
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-title">Indicadores operacionais</div>
+        <div className="grid g4">
+          {kpisOperacionais.map((k) => (
+            <div key={k.label}>
+              <div className="kpi-label">{k.label}</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: k.destaque === "good" ? "var(--good)" : k.destaque === "alert" ? "var(--alert)" : "var(--ink)" }}>{k.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
         <div className="card-title">Próximas atividades (7 dias)</div>
         <table className="rmi-table">
-          <thead><tr><th>Data</th><th>Atividade</th><th>Status</th></tr></thead>
+          <thead><tr><th>Data</th><th>Atividade</th><th>Tipo</th><th>Status</th></tr></thead>
           <tbody>
-            {atividades.map((a, i) => <tr key={i}><td className="rmi-mono">{a.data}</td><td>{a.label}</td><td>{a.status}</td></tr>)}
-            {atividades.length === 0 && <tr><td colSpan={3} className="footnote" style={{ padding: 16 }}>Nenhuma atividade nos próximos 7 dias. Cadastre reservas, limpezas ou manutenções para acompanhar aqui.</td></tr>}
+            {atividades.map((a, i) => <tr key={i}><td className="rmi-mono">{a.data}</td><td>{a.label}</td><td>{a.tipo}</td><td>{a.status}{a.prioridade ? ` · ${a.prioridade}` : ""}</td></tr>)}
+            {atividades.length === 0 && <tr><td colSpan={4} className="footnote" style={{ padding: 16 }}>Nenhuma atividade nos próximos 7 dias.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3436,33 +3774,35 @@ function GestaoDashboard({ allData, setView, setGestaoModule }) {
   );
 }
 
-function GestaoFinanceiroScreen({ allData, setModuleData }) {
-  const lancamentos = allData.financeiro || [];
-  const receitas = lancamentos.filter((l) => l.tipo === "Receita").reduce((s, l) => s + toNum(l.valor), 0);
-  const despesas = lancamentos.filter((l) => l.tipo === "Despesa").reduce((s, l) => s + toNum(l.valor), 0);
-  return (
-    <div>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="grid g3">
-          <div><div className="kpi-label">Receitas</div><div style={{ fontWeight: 700, color: "var(--good)" }}>{fmtMoney(receitas)}</div></div>
-          <div><div className="kpi-label">Despesas</div><div style={{ fontWeight: 700, color: "var(--alert)" }}>{fmtMoney(despesas)}</div></div>
-          <div><div className="kpi-label">Resultado</div><div style={{ fontWeight: 700 }}>{fmtMoney(receitas - despesas)}</div></div>
-        </div>
-      </div>
-      <GestaoCrudScreen moduleKey="financeiro" allData={allData} setModuleData={setModuleData} />
-    </div>
-  );
-}
+/* --------------------------- tela raiz da Gestão --------------------------- */
 
 function GestaoScreen({ allData, setModuleData, gestaoModule, setGestaoModule }) {
-  if (!gestaoModule) return <GestaoDashboard allData={allData} setGestaoModule={setGestaoModule} />;
+  const [detail, setDetail] = useState(null); // { moduleKey, id } | null
+  const [autoNewModule, setAutoNewModule] = useState(null);
+
+  const handleQuickNew = (moduleKey) => { setGestaoModule(moduleKey); setAutoNewModule(moduleKey); };
+  const handleOpenDetail = (moduleKey, id) => setDetail({ moduleKey, id });
+
+  if (!gestaoModule) return <GestaoDashboard allData={allData} setGestaoModule={setGestaoModule} onQuickNew={handleQuickNew} />;
+
+  if (detail && detail.moduleKey === "imoveis") {
+    return <div><GestaoImovelDetail imovelId={detail.id} allData={allData} onVoltar={() => setDetail(null)} /></div>;
+  }
+  if (detail && detail.moduleKey === "proprietarios") {
+    return <div><GestaoProprietarioDetail proprietarioId={detail.id} allData={allData} onVoltar={() => setDetail(null)} /></div>;
+  }
+
   return (
     <div>
       <button className="link-btn" style={{ marginBottom: 14 }} onClick={() => setGestaoModule(null)}>← Voltar ao painel</button>
       {gestaoModule === "calendario" && <GestaoCalendarioScreen allData={allData} />}
-      {gestaoModule === "financeiro" && <GestaoFinanceiroScreen allData={allData} setModuleData={setModuleData} />}
-      {gestaoModule !== "calendario" && gestaoModule !== "financeiro" && (
-        <GestaoCrudScreen moduleKey={gestaoModule} allData={allData} setModuleData={setModuleData} />
+      {gestaoModule === "financeiro" && <GestaoFinanceiroScreen allData={allData} setModuleData={setModuleData} onOpenDetail={handleOpenDetail} />}
+      {gestaoModule === "onboarding" && <GestaoOnboardingScreen allData={allData} setModuleData={setModuleData} />}
+      {gestaoModule !== "calendario" && gestaoModule !== "financeiro" && gestaoModule !== "onboarding" && (
+        <GestaoCrudScreen
+          moduleKey={gestaoModule} allData={allData} setModuleData={setModuleData} onOpenDetail={handleOpenDetail}
+          autoNew={autoNewModule === gestaoModule} onAutoNewHandled={() => setAutoNewModule(null)}
+        />
       )}
     </div>
   );
