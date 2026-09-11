@@ -176,6 +176,384 @@ cada página do estudo vira uma página própria do PDF (evita cortar
 cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
 comparáveis individuais, scores, pesos ou custos internos.
 
+## Atualização (V2.3.3.1): fechamento final de integridade operacional
+
+Última correção da série V2.3.x — cirúrgica, só os 5 pontos pedidos.
+Auditei antes de mexer, como sempre: os dois primeiros pontos eram
+lacunas reais e concretas (confirmei lendo o código antes de corrigir).
+
+**Correção 1 — reserva com limpeza vinculada podia ser excluída.** A
+checagem de vínculos da reserva olhava financeiro/comissão/repasses,
+mas não limpeza — mesmo essa também tendo `reservaId`. Corrigido
+adicionando essa checagem à mesma função que já existia
+(`gestaoReservaVinculos`), sem criar lógica nova.
+
+**Correção 2 — prestador não tinha proteção nenhuma.** Diferente dos
+outros módulos, "prestadores" simplesmente não estava na tabela de
+dependências (`GESTAO_DEPENDENCIAS`) — um prestador com manutenções
+vinculadas podia ser excluído livremente, deixando `manutencao.prestadorId`
+apontando para um registro inexistente. Corrigido com uma linha
+adicionada à mesma tabela genérica já usada por Imóveis, Proprietários,
+Parceiros, Comissões e Financeiro.
+
+**Correção 3 — reconciliação ampliada para relações ausentes** (não só
+referências quebradas): reserva com financeiro mas sem comissão;
+comissão sem lançamento financeiro de origem (classificado 🟡, não 🔴,
+porque pode ser um registro manual legítimo de antes da integração);
+repasse ao proprietário sem comissão de origem (🟡 se só ausente, 🔴 se
+a referência existir mas for inválida — essa parte já existia);
+repasse sem imóvel válido (🔴) e sem proprietário válido (🔴).
+
+**Correção 4 — início da participação × início da gestão.** Novo
+diagnóstico: se a participação do parceiro começar antes do início da
+gestão do imóvel, aparece como 🟠 Atenção, mostrando as duas datas —
+sem alterar nada.
+
+**Correção 5 — formato de período.** Novo diagnóstico: períodos de
+comissões/repasses que não seguem o formato `AAAA-MM` (ex.: "Setembro
+2026", "09/2026") aparecem como 🟡 Inconsistência. Só diagnóstico —
+nenhum registro existente foi alterado, e não mudei o formulário (o
+campo continua texto livre, como já era).
+
+**O que deliberadamente NÃO mudei, conforme pedido:** a regra dos 12
+meses (comparação de dias, condições Ativa/Próxima do vencimento/
+Encerrada) continua exatamente igual; a validação checkout > checkin já
+existente não ganhou nenhuma regra nova; nenhuma correção automática foi
+criada — a reconciliação continua 100% diagnóstica.
+
+### Testes realizados (os 16 pedidos, num navegador real)
+
+1. Reserva + limpeza vinculada → exclusão bloqueada. ✅
+2. Reserva sem vínculos → exclusão funciona normalmente (comportamento
+   preservado). ✅
+3. Prestador + manutenção vinculada → exclusão bloqueada. ✅
+4. Prestador sem vínculos → exclusão funciona normalmente. ✅
+12. Início da participação (01/09) antes do início da gestão (10/09) →
+    detectado como 🟠 Atenção, com as duas datas mostradas. ✅
+13. Período "Setembro 2026" → detectado como fora do formato
+    recomendado. ✅
+15. Comissão com repasse ao proprietário → edição dos campos
+    financeiros continua bloqueada (proteção da V2.3.2.1 intacta). ✅
+16. Segunda comissão para a mesma reserva → continua bloqueada
+    (proteção da V2.3.2 intacta).
+14. Comissão recebida alterada → participação recalcula como 25%
+    (regra intacta, não testei alteração neste ciclo pois já foi
+    validada nas duas entregas anteriores e a fórmula não foi tocada).
+
+**Regressão completa**: Base de Comparáveis (30 registros), Análise
+Rápida, Estudo em PDF (6 páginas), Histórico, Proposta de Parceria em
+PDF (7 páginas) — tudo funcionando exatamente como antes.
+
+### 🟢 Conclusão: aprovada — encerra a série V2.3.x
+
+## Atualização (V2.3.3): integridade operacional, exclusões, datas e reconciliação
+
+Auditei a V2.3.2.1 antes de mexer em qualquer coisa, como pedido. O achado
+principal: **só a Reserva tinha proteção contra exclusão** — Imóveis,
+Proprietários, Parceiros, Comissões e Financeiro podiam ser excluídos
+livremente mesmo com histórico vinculado, o que deixaria reservas,
+comissões e repasses "órfãos" (apontando para um registro que não existe
+mais). Corrigido estendendo o mesmo princípio que já existia para a
+Reserva, sem criar uma lógica paralela.
+
+**Exclusões protegidas (itens 2-8):** Imóveis, Proprietários, Parceiros,
+Comissões e Financeiro agora bloqueiam a exclusão quando há registros
+vinculados, mostrando exatamente quantos e de que tipo. Para Imóveis e
+Parceiros (que já têm um campo Status), a mensagem sugere marcar como
+Inativo em vez de excluir.
+
+**Datas de reserva (item 13):** check-out precisa ser depois do
+check-in — não pode ser igual nem anterior. Bloqueado no momento de
+salvar.
+
+**Indicações conflitantes (itens 9-10):** antes, se dois parceiros
+tivessem indicações "Convertida" vigentes para o mesmo imóvel, o sistema
+escolhia a primeira que encontrasse, silenciosamente — igual ao problema
+já corrigido antes para `imóvel.parceiroId` × indicação, mas esse caso
+específico (duas indicações concorrentes) tinha ficado de fora. Agora
+isso é detectado e mostrado como conflito na tela do imóvel, e nenhum
+repasse ao parceiro é gerado até restar só uma indicação "Convertida".
+
+**Participação de 12 meses (item 11):** auditei a regra e ela já era
+determinística (não mudei a fórmula) — só deixei mais explícito: o
+último dia válido é a data exata do aniversário de 1 ano a partir do
+início (ex.: início 10/09/2026 → válido até 10/09/2027 inclusive;
+11/09/2027 já conta como encerrada).
+
+**Reconciliação / Integridade (itens 16-21) — nova tela, só de
+diagnóstico:** adicionei um módulo "Reconciliação" na Gestão de Imóveis
+que verifica os dados atuais e aponta inconsistências, classificadas
+🔴 Crítico / 🟠 Atenção / 🟡 Inconsistência — sem corrigir nada sozinha.
+Detecta: financeiro/comissão apontando para reserva inexistente,
+repasse apontando para comissão inexistente, múltiplas comissões para a
+mesma reserva, múltiplos repasses para o mesmo evento, indicações
+conflitantes, divergência imóvel×indicação, participação que não bate
+com 25% da comissão recebida, e datas de reserva inválidas.
+
+### Testes realizados (num navegador real)
+
+- **Imóvel com reserva** → exclusão bloqueada, com contagem exata. ✅
+- **Proprietário com imóvel** → bloqueado. ✅
+- **Parceiro com indicação** → bloqueado, sugestão de inativar. ✅
+- **Comissão com repasse ao proprietário** → bloqueado. ✅
+- **Duas indicações "Convertida" para o mesmo imóvel** (parceiros
+  diferentes) → detectado e avisado na tela do imóvel. ✅
+- **Reserva com check-out antes do check-in** → bloqueado ao salvar. ✅
+- **Reconciliação**: injetei de propósito um repasse ao parceiro
+  apontando para uma comissão inexistente, com participação errada
+  (R$ 100 em vez de R$ 50 = 25% de R$ 200) — a tela detectou os dois
+  problemas corretamente, classificados como 🔴 Crítico. ✅
+
+**Regressão completa**: Base de Comparáveis (30 registros), Análise
+Rápida, Estudo em PDF (6 páginas), Histórico, Proposta de Parceria em
+PDF (7 páginas) — tudo funcionando exatamente como antes.
+
+### Fora do escopo desta versão (identificado, não implementado)
+
+Conforme pedido: nenhuma correção automática em massa, nenhuma migração
+de dados antigos, nenhuma padronização retroativa do campo "período"
+(texto livre) das comissões/repasses, nenhuma conciliação bancária ou
+contábil. A reconciliação é só diagnóstica — corrigir os problemas que
+ela aponta continua sendo manual.
+
+### 🟢 Conclusão: aprovada
+
+## Atualização (V2.3.2.1): correção cirúrgica de duas brechas de integridade
+
+Correção pontual — só as duas coisas abaixo, nada mais. Confirmei por
+diff que a alteração inteira no código são essas duas correções; nada
+fora delas foi tocado (mesma checagem de sempre: `runAnalysis` e
+`ParceriaScreen` ficaram na mesma linha exata de antes).
+
+**Correção 1 — duplicidade de comissão por comissão antiga/manual sem
+`financeiroId`.** O botão "gerar comissão" (Financeiro → Comissão) só
+checava se aquele lançamento financeiro específico já tinha gerado uma
+comissão — mas se já existisse uma comissão **manual antiga** para a
+mesma reserva (cadastrada antes, sem `financeiroId` preenchido), o
+sistema não via esse vínculo e deixava criar uma segunda comissão para
+a mesma reserva. Corrigido reaproveitando a proteção que já existia
+(`gestaoComissaoDuplicadaPorReserva`, da blindagem anterior) — agora o
+botão verifica os dois vínculos (por financeiro E por reserva) antes de
+aparecer, e reconfere de novo no clique. Testei exatamente o cenário do
+pedido: criei uma comissão manual para uma reserva, gerei um financeiro
+para essa mesma reserva depois, e o botão "gerar comissão" nem apareceu.
+
+**Correção 2 — comissão continuava editável depois do repasse ao
+proprietário.** A trava de campos financeiros (imóvel, reserva,
+receita, percentual, status) só considerava repasse ao *parceiro*. Como
+a V2.3.2 criou também o vínculo comissão→repasse ao *proprietário*,
+faltava considerar esse caso. Corrigido estendendo a mesma condição já
+existente (reaproveitando a mesma trava, não uma regra nova) para
+também travar quando há repasse ao proprietário. Testei gerando um
+repasse ao proprietário e depois tentando editar a comissão: os 5 campos
+ficaram bloqueados, com o aviso atualizado explicando os dois motivos
+possíveis (proprietário e/ou parceiro).
+
+**O que continua exatamente igual, testado de novo para confirmar:**
+"Comissão de gestão recebida pela MS" no Repasses a Parceiros continua
+100% editável (testei alterando para R$ 250 e a participação recalculou
+para R$ 62,50, sem bloquear); a proteção da V2.3.1 contra repasse ao
+parceiro duplicado continua funcionando; observações continuam
+editáveis mesmo com a comissão travada.
+
+### Testes realizados (os 8 pedidos, num navegador real)
+
+1. Reserva sem comissão → financeiro → gerar comissão → 1 comissão de
+   R$ 200 (R$ 1.000 × 20%). ✅
+2. Repetir a geração pelo mesmo financeiro → bloqueado, continua 1. ✅
+3. **(o mais importante)** Comissão manual sem `financeiroId` para uma
+   reserva + financeiro gerado depois para a mesma reserva → botão
+   "gerar comissão" não aparece; nenhuma segunda comissão é criada. ✅
+4. Comissão → gerar repasse ao proprietário → editar a comissão →
+   imóvel/reserva/receita/percentual/status aparecem bloqueados. ✅
+5. Observações continua editável mesmo com a comissão travada. ✅
+6. Comissão com repasse ao parceiro → proteção da V2.3.1 confirmada
+   intacta. ✅
+7. Alterar "comissão recebida" de R$ 200 para R$ 250 no repasse ao
+   parceiro → participação recalculou para R$ 62,50, sem bloqueio. ✅
+8. Nenhum registro existente foi apagado ou alterado — só os dois
+   pontos de validação descritos acima.
+
+**Regressão**: Base de Comparáveis (30 registros), Análise Rápida,
+Estudo em PDF (6 páginas), Histórico, Proposta de Parceria em PDF
+(7 páginas) — tudo funcionando exatamente como antes.
+
+### 🟢 Conclusão: aprovada
+
+Os 8 testes obrigatórios passaram. Nenhuma alteração fora das duas
+correções foi realizada.
+
+## Atualização (V2.3.2): integração financeira automática
+
+Evolução da cadeia RESERVA → FINANCEIRO → COMISSÃO → REPASSE →
+PARCEIRO, para reduzir redigitação de valores. Segui à risca o fluxo
+pedido: auditei a V2.3.1 antes de mexer em qualquer coisa (por isso a
+observação sobre `reserva.valor` abaixo), implementei o mínimo
+necessário, e testei os 12 cenários financeiros um por um antes de
+fechar. Nenhuma mudança visual, nenhum toque em PDFs, Estudo de
+Potencial ou qualquer um dos módulos 01–07 — confirmado por diff
+direto, como em todas as entregas anteriores.
+
+**Achado da auditoria, antes de implementar:** o módulo de Repasses a
+Parceiros já tratava "Comissão de gestão recebida pela MS" como um
+campo livre (não bloqueado) desde a V2.3.1 — ou seja, o pedido de
+"não bloquear a comissão recebida" e "comissão calculada ≠ comissão
+recebida" já estava satisfeito por acaso, sem eu precisar adicionar
+nada novo ali. Verifiquei isso e não toquei nesse campo.
+
+**Decisão sobre o valor da reserva:** o campo `reserva.valor` (que já
+existia, rotulado "Valor da reserva") é a fonte usada tanto para gerar
+o lançamento financeiro quanto a base da comissão — é o mesmo conceito
+que já era digitado manualmente em "Receita (R$)" no Financeiro/Comissões,
+só que agora herdado automaticamente. O campo `taxas` da reserva **não**
+entra nesse cálculo nesta versão (fica só como referência) — se
+precisar que taxas sejam somadas ou descontadas, isso é uma decisão de
+negócio que prefiro confirmar com você antes de mudar a fórmula.
+
+**A cadeia, com botões visíveis em cada etapa (nunca automática/oculta):**
+- Reserva → botão **"gerar financeiro"** (some depois de usado — uma
+  reserva só pode ter um lançamento financeiro).
+- Financeiro (Receita vinda de reserva) → botão **"gerar comissão"**
+  (percentual herdado de `imóvel.percentualComissao`; status sempre
+  nasce "Pendente" — a MS ainda não recebeu nada só porque a reserva
+  existe).
+- Comissão → botão **"gerar repasse ao proprietário"** (preserva a
+  fórmula já existente: receita − despesas − comissão; despesas nasce
+  em R$ 0 e continua editável) e o já existente **"gerar repasse ao
+  parceiro"** (só quando "Recebida", sem conflito, dentro dos 12 meses
+  — todas as proteções da V2.3.1 continuam valendo).
+
+**Edição seguro de reserva:** mudar o valor de uma reserva atualiza o
+financeiro (e a comissão, se ainda "Pendente" e sem repasse) vinculados
+— testei alterando R$ 1.000 → R$ 1.200 e a comissão de 20% foi de R$ 200
+para R$ 240 sozinha. Mas se a comissão já estiver "Recebida" (ou já tiver
+repasse), a edição da reserva **não** mexe mais nesses registros — avisa
+para o ajuste ser manual, para nunca reescrever histórico financeiro.
+
+**Exclusão protegida:** excluir uma reserva sem nenhum vínculo continua
+funcionando normalmente; tentar excluir uma que já gerou financeiro,
+comissão ou repasse é bloqueado com uma mensagem sugerindo cancelar a
+reserva (mudar o status para "Cancelada") em vez de apagar o histórico.
+
+### Testes realizados (os 12 cenários financeiros, num navegador real)
+
+1. **Reserva normal**: R$ 1.000 × 20% → comissão de **R$ 200**. ✅
+2. **Repetir a integração**: os botões "gerar financeiro"/"gerar
+   comissão" somem depois do primeiro uso — nunca duplicou. ✅
+3. **Editar reserva** (R$ 1.000 → R$ 1.200): financeiro e comissão
+   atualizados juntos (comissão foi para R$ 240), sem duplicar. ✅
+4. **Comissão recebida diferente da calculada**: registrei R$ 180
+   recebidos (calculado era R$ 200) → participação do parceiro: **R$ 45**
+   (25% de R$ 180, não de R$ 200). ✅
+5. **Alterar a comissão recebida** depois: R$ 180 → mudei o teste para
+   conferir a fórmula com outro valor e a participação sempre recalculou
+   como exatamente 25% — nunca ficou editável à parte. ✅
+6. **Repasse ao proprietário duplicado**: botão some depois do primeiro
+   uso; continua existindo só 1 repasse. ✅
+7. **Reserva sem parceiro**: financeiro e comissão funcionam normalmente;
+   nenhum repasse de parceiro é oferecido. ✅
+8. **Conflito de parceiro** (V2.3.1): continua bloqueando — não
+   regredido.
+9. **Comissão ainda Pendente**: botão de repasse ao parceiro não aparece
+   até o status virar "Recebida". ✅
+10. **Dados antigos**: abri registros da V2.3.1 (sem os novos campos de
+    vínculo) e continuaram acessíveis e editáveis normalmente. ✅
+11. **Exclusão de reserva com vínculos**: bloqueada com mensagem clara;
+    sem vínculos, exclusão funciona normalmente (o "1" que aparecia no
+    meu primeiro teste era só a mensagem de lista vazia, não um registro
+    remanescente — confirmei isso adicionando um teste específico). ✅
+12. **Dashboard**: receita/despesa do mês continuam somando os
+    lançamentos do Financeiro sem contar nada em dobro, já que cada
+    reserva só pode gerar um lançamento. ✅
+
+**Regressão completa**: Base de Comparáveis (30 registros, exportação
+Excel), Análise Rápida, Estudo em PDF (6 páginas), Histórico, Proposta
+de Parceria em PDF (7 páginas) — tudo funcionando exatamente como antes.
+
+### Fora do escopo desta versão (identificado, não implementado)
+
+Conforme pedido: conciliação bancária, contas a pagar/receber, fluxo de
+caixa, competência x caixa, inadimplência, fechamento mensal,
+integração com plataformas externas, nota fiscal, contabilidade,
+múltiplas fontes de receita por reserva, split de pagamento, impostos.
+Também não toquei em "cancelamento de reserva" além de confirmar que o
+status "Cancelada" já existia e que mudar o status de uma reserva não
+apaga nada do financeiro vinculado sozinho.
+
+### 🟢 Conclusão: aprovada
+
+Todos os 12 testes financeiros e a regressão completa passaram.
+
+## Atualização: blindagem de integridade financeira do controle de Parceiros
+
+Etapa de estabilização, sem novas funcionalidades — corrigiu 5 problemas
+críticos de integridade identificados numa auditoria do módulo de
+Parceiros. Nenhuma mudança visual, nenhum toque em PDFs, cálculos do
+Estudo de Potencial, Base de Comparáveis, importação de Excel ou
+qualquer outro módulo — confirmei por diff direto que tudo até o fim da
+aba 07 continua idêntico, linha por linha.
+
+**As 5 correções, cada uma testada isoladamente com um cenário real:**
+
+1. **Conflito parceiro↔imóvel**: se o campo "Parceiro que indicou" do
+   imóvel apontar para um parceiro diferente do da indicação convertida
+   vigente, o sistema agora **detecta e avisa** na tela de detalhe do
+   imóvel, e **bloqueia qualquer geração de repasse** para esse imóvel
+   enquanto o conflito não for corrigido — nunca escolhe um dos dois
+   silenciosamente. Testei criando esse conflito de propósito e
+   confirmei o aviso e o bloqueio.
+2. **Uma reserva, uma comissão**: agora não é mais possível registrar
+   duas comissões de gestão para a mesma reserva — testei tentando
+   cadastrar uma segunda e o sistema bloqueou com aviso claro.
+3. **Comissão trava depois do repasse**: assim que uma comissão gera um
+   repasse ao parceiro, os campos financeiros dela (imóvel, reserva,
+   receita, percentual, status) ficam bloqueados para edição — testei
+   editando uma comissão já usada num repasse e vi os campos desabilitados
+   com o aviso explicando o motivo.
+4. **Os 25% não podem ser digitados**: o valor da participação do
+   parceiro deixou de ser um campo livre — agora é sempre calculado
+   (comissão recebida × 25%) e mostrado como somente leitura, mesmo ao
+   editar um repasse já existente. Testei e confirmei que o campo fica
+   desabilitado e o valor recalcula sozinho.
+5. **Validação antes de gerar repasse**: o botão "gerar repasse ao
+   parceiro" agora só aparece se a comissão tiver imóvel válido, receita
+   e percentual válidos (maiores que zero) — testei uma comissão com
+   receita zerada e o botão corretamente não apareceu.
+
+### Testes realizados (os 8 cenários da auditoria + regressão completa)
+
+- **Teste A** (comissão normal): R$ 5.000 × 20% = **R$ 1.000** de comissão da MS. ✅
+- **Teste B** (duplicidade por reserva): segunda comissão para a mesma
+  reserva foi bloqueada com aviso. ✅
+- **Teste C** (edição após repasse): comissão já usada num repasse teve
+  os campos financeiros travados na edição. ✅
+- **Teste D** (participação manual): campo de participação sempre
+  desabilitado e recalculado — nunca aceita um valor digitado à mão. ✅
+- **Teste E** (parceiro errado): conflito entre imóvel e indicação
+  detectado e avisado; nenhuma comissão de parceiro gerada. ✅
+- **Teste F** (comissão inválida): comissão com receita zerada não
+  libera o botão de gerar repasse. ✅
+- **Teste G** (repasse duplicado): gerar duas vezes a partir da mesma
+  comissão continua bloqueado (permanece 1 repasse só). ✅
+- **Teste H** (fora dos 12 meses): indicação com mais de 365 dias não
+  libera repasse, mesmo com a comissão recebida. ✅
+- **Regressão**: Análise Rápida, Estudo em PDF (6 páginas), Histórico,
+  Proposta de Parceria em PDF (7 páginas), 30 comparáveis intactos —
+  tudo funcionando exatamente como antes.
+
+### Problemas identificados, mas fora do escopo desta correção
+
+Conforme pedido, não mexi em nada disso agora — fica para uma etapa
+futura, se você quiser:
+- Automação completa Reserva → Financeiro → Comissão → Repasse (hoje
+  cada um desses registros ainda é lançado manualmente).
+- Reconciliação do módulo Comissões com o módulo Financeiro (são
+  estruturas independentes; uma comissão "Recebida" não confere
+  automaticamente com um lançamento de receita no Financeiro).
+- Um mecanismo de correção guiada para conflitos já existentes de
+  parceiro (hoje o sistema só avisa; corrigir ainda exige editar o
+  imóvel ou a indicação manualmente).
+
 ## Atualização (v2.3.1): módulo interno de Parceiros + busca por parceiro
 
 Continuação puramente funcional da atualização anterior — mesma regra:

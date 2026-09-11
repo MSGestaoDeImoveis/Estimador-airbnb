@@ -3158,6 +3158,7 @@ const GESTAO_SCHEMAS = {
     fields: [
       { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
       { key: "reservaId", label: "Reserva relacionada", type: "ref", ref: "reservas" },
+      { key: "financeiroId", label: "Lançamento financeiro de origem", type: "ref", ref: "financeiro" },
       { key: "periodo", label: "Período", type: "text" },
       { key: "receita", label: "Receita (R$)", type: "number", money: true },
       { key: "percentual", label: "Percentual (%)", type: "number" },
@@ -3171,6 +3172,7 @@ const GESTAO_SCHEMAS = {
     fields: [
       { key: "proprietarioId", label: "Proprietário", type: "ref", ref: "proprietarios", filterable: true },
       { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "comissaoId", label: "Comissão de origem", type: "ref", ref: "comissoes" },
       { key: "periodo", label: "Período", type: "text" },
       { key: "receita", label: "Receita (R$)", type: "number", money: true },
       { key: "despesas", label: "Despesas (R$)", type: "number", money: true },
@@ -3199,6 +3201,7 @@ const GESTAO_SCHEMAS = {
     fields: [
       { key: "tipo", label: "Tipo", type: "select", options: ["Receita", "Despesa"], filterable: true },
       { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis", filterable: true },
+      { key: "reservaId", label: "Reserva de origem", type: "ref", ref: "reservas" },
       { key: "categoria", label: "Categoria", type: "text" },
       { key: "descricao", label: "Descrição", type: "text" },
       { key: "valor", label: "Valor (R$)", type: "number", money: true },
@@ -3256,9 +3259,9 @@ const GESTAO_SCHEMAS = {
   },
 };
 
-const GESTAO_MODULE_ORDER = ["imoveis", "proprietarios", "reservas", "calendario", "limpeza", "lavanderia", "enxoval", "manutencao", "prestadores", "financeiro", "comissoes", "repasses", "onboarding", "pendencias", "parceiros", "indicacoes", "repassesParceiros"];
-const GESTAO_MODULE_ICON = { imoveis: "building", proprietarios: "handshake", reservas: "presentation", calendario: "clock", limpeza: "grid", lavanderia: "grid", enxoval: "grid", manutencao: "gear", prestadores: "handshake", financeiro: "bolt", comissoes: "bolt", repasses: "bolt", onboarding: "book", pendencias: "gear", parceiros: "handshake", indicacoes: "building", repassesParceiros: "bolt" };
-const GESTAO_MODULE_LABEL = { ...Object.fromEntries(Object.entries(GESTAO_SCHEMAS).map(([k, v]) => [k, v.label])), calendario: "Calendário", onboarding: "Onboarding" };
+const GESTAO_MODULE_ORDER = ["imoveis", "proprietarios", "reservas", "calendario", "limpeza", "lavanderia", "enxoval", "manutencao", "prestadores", "financeiro", "comissoes", "repasses", "onboarding", "pendencias", "parceiros", "indicacoes", "repassesParceiros", "reconciliacao"];
+const GESTAO_MODULE_ICON = { imoveis: "building", proprietarios: "handshake", reservas: "presentation", calendario: "clock", limpeza: "grid", lavanderia: "grid", enxoval: "grid", manutencao: "gear", prestadores: "handshake", financeiro: "bolt", comissoes: "bolt", repasses: "bolt", onboarding: "book", pendencias: "gear", parceiros: "handshake", indicacoes: "building", repassesParceiros: "bolt", reconciliacao: "gear" };
+const GESTAO_MODULE_LABEL = { ...Object.fromEntries(Object.entries(GESTAO_SCHEMAS).map(([k, v]) => [k, v.label])), calendario: "Calendário", onboarding: "Onboarding", reconciliacao: "Reconciliação" };
 const GESTAO_MODULE_DESC = {
   imoveis: "Cadastro e gerenciamento", proprietarios: "Gestão de proprietários", reservas: "Controle de reservas",
   calendario: "Agenda operacional", limpeza: "Controle de limpezas", lavanderia: "Gestão de lavanderia",
@@ -3266,6 +3269,7 @@ const GESTAO_MODULE_DESC = {
   financeiro: "Receitas e despesas", comissoes: "Comissões e pagamentos", repasses: "Repasses a proprietários",
   onboarding: "Entrada de novos imóveis", pendencias: "Acompanhamento de tarefas",
   parceiros: "Controle interno de parceiros", indicacoes: "Imóveis indicados por parceiros", repassesParceiros: "Repasses a parceiros (25%)",
+  reconciliacao: "Diagnóstico de integridade dos dados",
 };
 
 const ONBOARDING_GRUPOS = [
@@ -3317,13 +3321,51 @@ function gestaoParticipacaoStatus(indicacao) {
   return "Ativa";
 }
 // Indicação "convertida" e vigente (dentro dos 12 meses) para um imóvel —
-// é essa indicação que autoriza gerar participação de parceiro.
+// é essa indicação que autoriza gerar participação de parceiro. A
+// INDICAÇÃO é a fonte oficial da relação parceiro↔imóvel para fins de
+// remuneração (imovel.parceiroId é só um atalho de exibição — nunca é
+// usado sozinho para calcular comissão).
 function gestaoIndicacaoVigente(allData, imovelId) {
   const indicacoes = allData.indicacoes || [];
   return indicacoes.find((i) => i.imovelId === imovelId && i.statusIndicacao === "Convertida" && gestaoParticipacaoStatus(i) !== "Encerrada" && gestaoParticipacaoStatus(i) !== "—");
 }
+// V2.3.3, item 9 — se houver MAIS DE UMA indicação "Convertida" e vigente
+// para o mesmo imóvel (dois parceiros disputando o mesmo imóvel), isso é
+// um conflito: o sistema nunca deve escolher uma delas sozinho.
+function gestaoIndicacoesConflitantes(allData, imovelId) {
+  const indicacoes = allData.indicacoes || [];
+  const vigentes = indicacoes.filter((i) => i.imovelId === imovelId && i.statusIndicacao === "Convertida" && gestaoParticipacaoStatus(i) !== "Encerrada" && gestaoParticipacaoStatus(i) !== "—");
+  return vigentes.length > 1 ? vigentes : null;
+}
+// CRÍTICO 1 — detecta conflito entre imovel.parceiroId (campo de exibição)
+// e a indicação oficial convertida/vigente daquele imóvel. Nunca escolhe um
+// dos dois silenciosamente: só sinaliza, para o usuário corrigir.
+function gestaoParceiroConflito(allData, imovelId) {
+  const imovel = (allData.imoveis || []).find((x) => x.id === imovelId);
+  if (!imovel || !imovel.parceiroId) return null;
+  const indicacao = gestaoIndicacaoVigente(allData, imovelId);
+  if (!indicacao) return null;
+  if (indicacao.parceiroId && indicacao.parceiroId !== imovel.parceiroId) {
+    return { imovelParceiro: imovel.parceiroId, indicacaoParceiro: indicacao.parceiroId };
+  }
+  return null;
+}
+// CRÍTICO 5 — valida a integridade mínima da comissão antes de permitir
+// gerar qualquer repasse ao parceiro a partir dela.
+function gestaoComissaoValida(allData, comissao) {
+  if (!comissao || !comissao.id) return false;
+  if (!comissao.imovelId || !(allData.imoveis || []).some((i) => i.id === comissao.imovelId)) return false;
+  const receita = toNum(comissao.receita, NaN);
+  const percentual = toNum(comissao.percentual, NaN);
+  if (!Number.isFinite(receita) || receita <= 0) return false;
+  if (!Number.isFinite(percentual) || percentual <= 0) return false;
+  return true;
+}
 function gestaoRepasseParceiroElegivel(allData, comissao) {
   if (comissao.status !== "Recebida") return null;
+  if (!gestaoComissaoValida(allData, comissao)) return null; // Crítico 5
+  if (gestaoParceiroConflito(allData, comissao.imovelId)) return null; // Crítico 1
+  if (gestaoIndicacoesConflitantes(allData, comissao.imovelId)) return null; // V2.3.3, item 9
   const indicacao = gestaoIndicacaoVigente(allData, comissao.imovelId);
   if (!indicacao) return null;
   // Regra de duplicidade: cada comissão só pode gerar UM repasse ao parceiro.
@@ -3331,6 +3373,125 @@ function gestaoRepasseParceiroElegivel(allData, comissao) {
   if (jaGerado) return null;
   return indicacao;
 }
+// CRÍTICO 2 — uma mesma reserva não pode ter mais de uma comissão de
+// gestão vinculada (evento financeiro único por reserva).
+function gestaoComissaoDuplicadaPorReserva(allData, comissao) {
+  if (!comissao.reservaId) return false;
+  return (allData.comissoes || []).some((c) => c.reservaId === comissao.reservaId && c.id !== comissao.id);
+}
+// CRÍTICO 3 — uma comissão que já gerou repasse ao parceiro não pode ter
+// seus campos financeiros alterados silenciosamente (o repasse ficaria
+// inconsistente com a origem).
+function gestaoComissaoTemRepasse(allData, comissaoId) {
+  return (allData.repassesParceiros || []).some((r) => r.origemComissaoId === comissaoId);
+}
+
+/* =========================================================================
+   V2.3.2 — INTEGRAÇÃO FINANCEIRA AUTOMÁTICA (Reserva → Financeiro →
+   Comissão → Repasse → Parceiro). Reaproveita os mesmos módulos e a mesma
+   persistência já existentes; só adiciona os vínculos explícitos
+   (reservaId, financeiroId, comissaoId) e os botões de geração. Nenhuma
+   automação marca algo como "recebido" sozinha — isso continua sendo uma
+   ação do usuário, como já valia na V2.3.1 para o parceiro.
+   ========================================================================= */
+
+// Uma reserva só pode ter UM lançamento financeiro principal.
+function gestaoReservaTemFinanceiro(allData, reservaId) {
+  return (allData.financeiro || []).find((f) => f.reservaId === reservaId);
+}
+// Um lançamento financeiro (de uma reserva) só pode gerar UMA comissão.
+function gestaoFinanceiroTemComissao(allData, financeiroId) {
+  return (allData.comissoes || []).find((c) => c.financeiroId === financeiroId);
+}
+// Uma comissão só pode gerar UM repasse ao proprietário.
+function gestaoComissaoTemRepasseProprietario(allData, comissaoId) {
+  return (allData.repasses || []).find((r) => r.comissaoId === comissaoId);
+}
+// Uma reserva só pode ter, no total, uma cadeia: 1 financeiro, 1 comissão,
+// 1 repasse ao proprietário, e (via V2.3.1) no máximo 1 repasse ao
+// parceiro — usado para decidir se é seguro bloquear a exclusão da reserva.
+function gestaoReservaVinculos(allData, reservaId) {
+  const financeiro = gestaoReservaTemFinanceiro(allData, reservaId);
+  const comissao = (allData.comissoes || []).find((c) => c.reservaId === reservaId);
+  const repasseProprietario = comissao ? gestaoComissaoTemRepasseProprietario(allData, comissao.id) : null;
+  const repasseParceiro = comissao ? (allData.repassesParceiros || []).find((r) => r.origemComissaoId === comissao.id) : null;
+  // V2.3.3.1, correção 1 — limpeza também referencia reservaId; faltava
+  // considerar isso antes de liberar a exclusão da reserva.
+  const limpeza = (allData.limpeza || []).find((l) => l.reservaId === reservaId);
+  return { financeiro, comissao, repasseProprietario, repasseParceiro, limpeza };
+}
+// V2.3.3, itens 2-8 — proteção genérica de exclusão: antes desta versão só
+// Reserva tinha essa checagem (acima). Estende o mesmo princípio (nunca
+// deixar registro órfão / histórico apagado silenciosamente) para Imóveis,
+// Proprietários, Parceiros, Comissões e Financeiro, reaproveitando os
+// vínculos por ID que já existem — nenhuma tabela ou estrutura nova.
+const GESTAO_DEPENDENCIAS = {
+  imoveis: [
+    ["reservas", "imovelId", "reserva(s)"], ["financeiro", "imovelId", "lançamento(s) financeiro(s)"],
+    ["comissoes", "imovelId", "comissão(ões)"], ["repasses", "imovelId", "repasse(s) a proprietário"],
+    ["indicacoes", "imovelId", "indicação(ões) de parceiro"], ["limpeza", "imovelId", "registro(s) de limpeza"],
+    ["lavanderia", "imovelId", "registro(s) de lavanderia"], ["enxoval", "imovelId", "item(ns) de enxoval"],
+    ["manutencao", "imovelId", "registro(s) de manutenção"], ["pendencias", "imovelId", "pendência(s)"],
+    ["repassesParceiros", "imovelId", "repasse(s) a parceiro"],
+  ],
+  proprietarios: [["imoveis", "proprietarioId", "imóvel(is)"], ["repasses", "proprietarioId", "repasse(s)"]],
+  parceiros: [
+    ["indicacoes", "parceiroId", "indicação(ões)"], ["repassesParceiros", "parceiroId", "repasse(s)"],
+    ["imoveis", "parceiroId", "imóvel(is) (campo \"parceiro que indicou\")"],
+  ],
+  comissoes: [["repasses", "comissaoId", "repasse ao proprietário"], ["repassesParceiros", "origemComissaoId", "repasse ao parceiro"]],
+  financeiro: [["comissoes", "financeiroId", "comissão"]],
+  prestadores: [["manutencao", "prestadorId", "manutenção(ões)"]],
+};
+function gestaoDependentesParaExcluir(allData, moduleKey, id) {
+  const regras = GESTAO_DEPENDENCIAS[moduleKey];
+  if (!regras) return [];
+  const encontrados = [];
+  for (const [refModule, refKey, label] of regras) {
+    const n = (allData[refModule] || []).filter((r) => r[refKey] === id).length;
+    if (n > 0) encontrados.push(`${n} ${label}`);
+  }
+  return encontrados;
+}
+// Gera o lançamento financeiro (Receita) a partir de uma reserva. O valor
+// usado é reserva.valor — o mesmo campo que já era digitado manualmente em
+// "Receita (R$)" no Financeiro. "taxas" não é somado nem descontado
+// automaticamente nesta versão (fica disponível só como referência na
+// própria reserva); se precisar entrar no cálculo, é um ajuste para uma
+// próxima etapa, não uma fórmula nova inventada agora.
+function gestaoGerarFinanceiroDeReserva(reserva) {
+  return {
+    id: uid(), tipo: "Receita", imovelId: reserva.imovelId, reservaId: reserva.id,
+    categoria: "Reserva", descricao: `Receita gerada a partir da Reserva de ${reserva.hospede || "hóspede"}`,
+    valor: toNum(reserva.valor), data: reserva.checkin || "",
+  };
+}
+// Gera a comissão a partir de um lançamento financeiro de Receita. O
+// percentual é herdado de imovel.percentualComissao (a mesma configuração
+// já existente no cadastro do imóvel desde a V2.2) — se o imóvel não tiver
+// esse campo preenchido, a comissão é criada com percentual em branco, sem
+// inventar um número. O status começa sempre "Pendente": a reserva/receita
+// existir não significa que a MS já recebeu o dinheiro.
+function gestaoGerarComissaoDeFinanceiro(financeiro, imovel) {
+  return {
+    id: uid(), imovelId: financeiro.imovelId, reservaId: financeiro.reservaId, financeiroId: financeiro.id,
+    periodo: financeiro.data || "", receita: toNum(financeiro.valor),
+    percentual: imovel && imovel.percentualComissao !== undefined && imovel.percentualComissao !== "" ? imovel.percentualComissao : "",
+    status: "Pendente",
+  };
+}
+// Gera o repasse ao proprietário a partir de uma comissão. Preserva a
+// fórmula já existente (receita − despesas − comissão) — aqui só
+// preenche automaticamente receita/comissão/imóvel/proprietário; despesas
+// começa em 0 e continua editável (é um dado que não existe na reserva).
+function gestaoGerarRepasseDeComissao(comissao, imovel) {
+  return {
+    id: uid(), proprietarioId: imovel ? imovel.proprietarioId : "", imovelId: comissao.imovelId, comissaoId: comissao.id,
+    periodo: comissao.periodo || "", receita: toNum(comissao.receita), despesas: 0,
+    comissao: gestaoComissaoValor(comissao), status: "Pendente",
+  };
+}
+
 // Código único do parceiro (PAR-0001, PAR-0002…) — deriva do maior número já
 // usado entre os parceiros cadastrados, então nunca repete mesmo que um
 // parceiro anterior tenha sido excluído.
@@ -3372,22 +3533,51 @@ function GestaoForm({ moduleKey, initial, onSave, onCancel, allData }) {
   const schema = GESTAO_SCHEMAS[moduleKey];
   const [item, setItem] = useState(initial || { id: null });
   const set = (key, v) => setItem({ ...item, [key]: v });
+  // CRÍTICO 3 (V2.3.1) — uma comissão que já gerou repasse ao parceiro tem
+  // seus campos financeiros travados, para o repasse nunca ficar
+  // desalinhado da comissão que lhe deu origem. A partir da V2.3.2, a
+  // mesma trava vale quando existe repasse ao PROPRIETÁRIO (repasse ×
+  // comissaoId) — é o mesmo risco (histórico financeiro desalinhado),
+  // então reaproveita a mesma lógica em vez de criar uma regra paralela.
+  const comissaoTravada = moduleKey === "comissoes" && item.id && (gestaoComissaoTemRepasse(allData, item.id) || gestaoComissaoTemRepasseProprietario(allData, item.id));
+  const CAMPOS_FINANCEIROS_COMISSAO = ["imovelId", "reservaId", "receita", "percentual", "status"];
   return (
     <div className="card">
       <div className="card-title">{item.id ? `Editar ${schema.label.toLowerCase()}` : `Novo registro — ${schema.label}`}</div>
+      {comissaoTravada && (
+        <p className="footnote" style={{ marginBottom: 10, color: "var(--alert)", fontWeight: 700 }}>
+          Esta comissão já gerou um repasse (ao proprietário e/ou ao parceiro) — imóvel, reserva, receita, percentual
+          e status ficam bloqueados para o repasse não ficar inconsistente com a origem. Só período e observações
+          podem ser editados.
+        </p>
+      )}
       <div className="grid g2">
-        {schema.fields.map((f) => (
-          <Field key={f.key} label={f.label + (f.required ? " *" : "")}>
-            {moduleKey === "parceiros" && f.key === "codigoParceiro" ? (
-              <div className="hstack">
+        {schema.fields.map((f) => {
+          const travado = comissaoTravada && CAMPOS_FINANCEIROS_COMISSAO.includes(f.key);
+          // CRÍTICO 4 — a participação do parceiro é sempre um valor
+          // derivado (25% da comissão recebida); nunca um campo livre.
+          if (moduleKey === "repassesParceiros" && f.key === "valorParticipacao") {
+            return (
+              <Field key={f.key} label={f.label}>
+                <input className="rmi-input" value={fmtMoney(toNum(item.comissaoRecebida) * 0.25)} disabled style={{ background: "var(--line-soft)", color: "var(--ink-soft)" }} />
+              </Field>
+            );
+          }
+          return (
+            <Field key={f.key} label={f.label + (f.required ? " *" : "")}>
+              {moduleKey === "parceiros" && f.key === "codigoParceiro" ? (
+                <div className="hstack">
+                  <GestaoField field={f} value={item[f.key]} onChange={(v) => set(f.key, v)} allData={allData} />
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => set("codigoParceiro", gestaoNextParceiroCode(allData))}>Gerar</button>
+                </div>
+              ) : travado ? (
+                <input className="rmi-input" value={f.type === "ref" ? gestaoRefLabel(allData, f.ref, item[f.key]) : (item[f.key] || "—")} disabled style={{ background: "var(--line-soft)", color: "var(--ink-soft)" }} />
+              ) : (
                 <GestaoField field={f} value={item[f.key]} onChange={(v) => set(f.key, v)} allData={allData} />
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => set("codigoParceiro", gestaoNextParceiroCode(allData))}>Gerar</button>
-              </div>
-            ) : (
-              <GestaoField field={f} value={item[f.key]} onChange={(v) => set(f.key, v)} allData={allData} />
-            )}
-          </Field>
-        ))}
+              )}
+            </Field>
+          );
+        })}
       </div>
       {moduleKey === "parceiros" && item.codigoParceiro && (allData.parceiros || []).some((p) => p.codigoParceiro === item.codigoParceiro && p.id !== item.id) && (
         <p className="footnote" style={{ marginTop: 8, color: "var(--alert)", fontWeight: 700 }}>Este código já está em uso por outro parceiro — escolha outro ou clique em "Gerar".</p>
@@ -3398,8 +3588,14 @@ function GestaoForm({ moduleKey, initial, onSave, onCancel, allData }) {
           {item.statusIndicacao !== "Convertida" && " Só gera participação de comissão quando o status for \"Convertida\"."}
         </p>
       )}
+      {moduleKey === "comissoes" && !comissaoTravada && item.reservaId && gestaoComissaoDuplicadaPorReserva(allData, item) && (
+        <p className="footnote" style={{ marginTop: 10, color: "var(--alert)", fontWeight: 700 }}>Esta reserva já possui outra comissão de gestão registrada — cada reserva só pode ter uma.</p>
+      )}
       {moduleKey === "comissoes" && toNum(item.receita) > 0 && toNum(item.percentual) > 0 && (
         <p className="footnote" style={{ marginTop: 10 }}>Comissão calculada automaticamente: <b>{fmtMoney(gestaoComissaoValor(item))}</b> ({toNum(item.percentual)}% de {fmtMoney(toNum(item.receita))})</p>
+      )}
+      {moduleKey === "repassesParceiros" && toNum(item.comissaoRecebida) > 0 && (
+        <p className="footnote" style={{ marginTop: 10 }}>Participação calculada automaticamente: <b>{fmtMoney(toNum(item.comissaoRecebida) * 0.25)}</b> (25% de {fmtMoney(toNum(item.comissaoRecebida))}) — este valor não pode ser digitado manualmente, para preservar a regra de 25%.</p>
       )}
       {moduleKey === "repasses" && (toNum(item.receita) > 0 || toNum(item.despesas) > 0 || toNum(item.comissao) > 0) && (
         <p className="footnote" style={{ marginTop: 10 }}>Valor líquido calculado automaticamente: <b>{fmtMoney(gestaoRepasseLiquido(item))}</b> (receita − despesas − comissão)</p>
@@ -3419,7 +3615,23 @@ function GestaoForm({ moduleKey, initial, onSave, onCancel, allData }) {
             window.alert("Este código de parceiro já está em uso. Escolha outro ou clique em \"Gerar\".");
             return;
           }
-          onSave({ ...item, id: item.id || uid() });
+          if (moduleKey === "comissoes" && !comissaoTravada && item.reservaId && gestaoComissaoDuplicadaPorReserva(allData, item)) {
+            window.alert("Esta reserva já possui outra comissão de gestão registrada. Cada reserva só pode gerar uma comissão.");
+            return;
+          }
+          // V2.3.3, item 13 — checkout precisa ser depois do check-in (nunca
+          // igual, nunca antes).
+          if (moduleKey === "reservas" && item.checkin && item.checkout && item.checkout <= item.checkin) {
+            window.alert("A data de check-out precisa ser depois da data de check-in.");
+            return;
+          }
+          // CRÍTICO 4 — recalcula a participação sempre a partir da comissão
+          // recebida, mesmo que algo tenha sido digitado no campo (que já
+          // está bloqueado na interface, mas a garantia fica aqui também).
+          const toSave = moduleKey === "repassesParceiros"
+            ? { ...item, valorParticipacao: toNum(item.comissaoRecebida) * 0.25 }
+            : item;
+          onSave({ ...toSave, id: toSave.id || uid() });
         }}>Salvar</button>
         <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
       </div>
@@ -3479,6 +3691,32 @@ function GestaoCrudScreen({ moduleKey, allData, setModuleData, onOpenDetail, aut
   const handleSave = (item) => {
     const exists = items.some((x) => x.id === item.id);
     setModuleData(moduleKey, exists ? items.map((x) => (x.id === item.id ? item : x)) : [...items, item]);
+    // Item 12 — se o valor de uma reserva já integrada mudar, atualiza o
+    // lançamento financeiro (e a comissão, se ainda estiver Pendente e sem
+    // repasse) em vez de deixá-los desatualizados ou criar duplicados. Só
+    // é considerado "seguro" enquanto a cadeia não tiver avançado para
+    // comissão Recebida ou repasse — nesse ponto, para não reescrever
+    // histórico financeiro, o sistema para e pede ajuste manual.
+    if (moduleKey === "reservas" && exists) {
+      const anterior = items.find((x) => x.id === item.id);
+      const financeiroVinculado = gestaoReservaTemFinanceiro(allData, item.id);
+      if (financeiroVinculado && toNum(anterior.valor) !== toNum(item.valor)) {
+        const comissaoVinculada = (allData.comissoes || []).find((c) => c.financeiroId === financeiroVinculado.id);
+        const avancou = comissaoVinculada && (
+          comissaoVinculada.status === "Recebida" ||
+          gestaoComissaoTemRepasseProprietario(allData, comissaoVinculada.id) ||
+          gestaoComissaoTemRepasse(allData, comissaoVinculada.id)
+        );
+        if (avancou) {
+          window.alert("O valor desta reserva mudou, mas a comissão/repasse vinculados já avançaram (comissão recebida ou repasse gerado) — para não reescrever histórico financeiro, nada foi atualizado automaticamente. Ajuste manualmente em \"Financeiro\"/\"Comissões\" se for o caso.");
+        } else {
+          setModuleData("financeiro", (allData.financeiro || []).map((f) => (f.id === financeiroVinculado.id ? { ...f, valor: toNum(item.valor) } : f)));
+          if (comissaoVinculada) {
+            setModuleData("comissoes", (allData.comissoes || []).map((c) => (c.id === comissaoVinculada.id ? { ...c, receita: toNum(item.valor) } : c)));
+          }
+        }
+      }
+    }
     setEditing(null);
   };
   const handleDelete = (id) => {
@@ -3529,6 +3767,32 @@ function GestaoCrudScreen({ moduleKey, allData, setModuleData, onOpenDetail, aut
                 {schema.columns.map((c) => <td key={c}>{gestaoCellValue(allData, schema, moduleKey, it, c)}</td>)}
                 <td className="hstack">
                   {onOpenDetail && (moduleKey === "imoveis" || moduleKey === "proprietarios" || moduleKey === "parceiros") && <button className="link-btn" onClick={() => onOpenDetail(moduleKey, it.id)}>detalhes</button>}
+                  {moduleKey === "reservas" && !gestaoReservaTemFinanceiro(allData, it.id) && toNum(it.valor) > 0 && (
+                    <button className="link-btn" onClick={() => {
+                      setModuleData("financeiro", [...(allData.financeiro || []), gestaoGerarFinanceiroDeReserva(it)]);
+                      window.alert("Lançamento financeiro gerado a partir desta reserva. Veja em \"Financeiro\".");
+                    }}>gerar financeiro</button>
+                  )}
+                  {moduleKey === "financeiro" && it.tipo === "Receita" && it.reservaId && !gestaoFinanceiroTemComissao(allData, it.id) && !gestaoComissaoDuplicadaPorReserva(allData, { reservaId: it.reservaId, id: null }) && (
+                    <button className="link-btn" onClick={() => {
+                      // Reconfere na hora do clique (não só na visibilidade do botão) — cobre
+                      // comissões antigas/manuais sem financeiroId para a mesma reserva.
+                      if (gestaoComissaoDuplicadaPorReserva(allData, { reservaId: it.reservaId, id: null }) || gestaoFinanceiroTemComissao(allData, it.id)) {
+                        window.alert("Já existe uma comissão para esta reserva. Cada reserva só pode ter uma comissão.");
+                        return;
+                      }
+                      const imovel = (allData.imoveis || []).find((i) => i.id === it.imovelId);
+                      setModuleData("comissoes", [...(allData.comissoes || []), gestaoGerarComissaoDeFinanceiro(it, imovel)]);
+                      window.alert("Comissão gerada a partir deste lançamento financeiro (status Pendente). Veja em \"Comissões\".");
+                    }}>gerar comissão</button>
+                  )}
+                  {moduleKey === "comissoes" && gestaoComissaoValida(allData, it) && !gestaoComissaoTemRepasseProprietario(allData, it.id) && (
+                    <button className="link-btn" onClick={() => {
+                      const imovel = (allData.imoveis || []).find((i) => i.id === it.imovelId);
+                      setModuleData("repasses", [...(allData.repasses || []), gestaoGerarRepasseDeComissao(it, imovel)]);
+                      window.alert("Repasse ao proprietário gerado a partir desta comissão (despesas ficam em R$ 0 — ajuste se necessário). Veja em \"Repasses\".");
+                    }}>gerar repasse ao proprietário</button>
+                  )}
                   {moduleKey === "comissoes" && gestaoRepasseParceiroElegivel(allData, it) && (
                     <button className="link-btn" onClick={() => {
                       const indicacao = gestaoRepasseParceiroElegivel(allData, it);
@@ -3543,7 +3807,24 @@ function GestaoCrudScreen({ moduleKey, allData, setModuleData, onOpenDetail, aut
                     }}>gerar repasse ao parceiro</button>
                   )}
                   <button className="link-btn" onClick={() => setEditing(it)}>editar</button>
-                  <button className="link-btn" style={{ color: "var(--alert)" }} onClick={() => handleDelete(it.id)}>excluir</button>
+                  <button className="link-btn" style={{ color: "var(--alert)" }} onClick={() => {
+                    if (moduleKey === "reservas") {
+                      const v = gestaoReservaVinculos(allData, it.id);
+                      if (v.financeiro || v.comissao || v.repasseProprietario || v.repasseParceiro || v.limpeza) {
+                        window.alert("Esta reserva possui registros operacionais ou financeiros vinculados (financeiro/comissão/repasse/limpeza) e não pode ser excluída, para não apagar histórico. Cancele a reserva (mude o status para \"Cancelada\") em vez de excluir, se for o caso.");
+                        return;
+                      }
+                    }
+                    if (GESTAO_DEPENDENCIAS[moduleKey]) {
+                      const dependentes = gestaoDependentesParaExcluir(allData, moduleKey, it.id);
+                      if (dependentes.length > 0) {
+                        const sugestaoStatus = (moduleKey === "parceiros" || moduleKey === "imoveis") ? " Use o campo \"Status\" para marcar como Inativo em vez de excluir." : "";
+                        window.alert(`Não é possível excluir: existem registros vinculados (${dependentes.join(", ")}). Excluir apagaria histórico.${sugestaoStatus}`);
+                        return;
+                      }
+                    }
+                    handleDelete(it.id);
+                  }}>excluir</button>
                 </td>
               </tr>
             ))}
@@ -3578,12 +3859,38 @@ function GestaoImovelDetail({ imovelId, allData, onVoltar }) {
   const repassesParceiro = (allData.repassesParceiros || []).filter((r) => r.imovelId === imovelId);
   const pagoParceiro = repassesParceiro.filter((r) => r.status === "Pago").reduce((s, r) => s + toNum(r.valorParticipacao), 0);
   const pendenteParceiro = repassesParceiro.filter((r) => r.status !== "Pago" && r.status !== "Cancelado").reduce((s, r) => s + toNum(r.valorParticipacao), 0);
+  const conflitoParceiro = gestaoParceiroConflito(allData, imovelId); // CRÍTICO 1
+  const indicacoesConflitantes = gestaoIndicacoesConflitantes(allData, imovelId); // V2.3.3, item 9
 
   return (
     <div>
       <button className="link-btn" onClick={onVoltar}>← Voltar para Imóveis</button>
       <h1 className="page-title" style={{ marginTop: 10 }}>{imovel.nome}</h1>
       <p className="page-sub">{imovel.tipo} · {imovel.bairro || "—"} · {gestaoRefLabel(allData, "proprietarios", imovel.proprietarioId)} · Status: {imovel.status || "—"}</p>
+
+      {indicacoesConflitantes && (
+        <div className="card" style={{ borderColor: "var(--alert)", background: "var(--alert-soft)" }}>
+          <div className="card-title" style={{ color: "var(--alert)" }}>Múltiplas indicações convertidas para este imóvel</div>
+          <p className="footnote" style={{ color: "var(--ink)" }}>
+            Encontrei {indicacoesConflitantes.length} indicações "Convertida" e vigentes para este imóvel, de parceiros
+            diferentes ({indicacoesConflitantes.map((i) => gestaoRefLabel(allData, "parceiros", i.parceiroId)).join(", ")}).
+            O sistema não escolhe uma delas sozinho — nenhum repasse ao parceiro será gerado para este imóvel até que
+            apenas uma indicação permaneça "Convertida" (mude o status das demais para "Cancelada" ou "Não convertida").
+          </p>
+        </div>
+      )}
+
+      {conflitoParceiro && (
+        <div className="card" style={{ borderColor: "var(--alert)", background: "var(--alert-soft)" }}>
+          <div className="card-title" style={{ color: "var(--alert)" }}>Conflito de parceiro detectado</div>
+          <p className="footnote" style={{ color: "var(--ink)" }}>
+            O campo "Parceiro que indicou" deste imóvel aponta para <b>{gestaoRefLabel(allData, "parceiros", conflitoParceiro.imovelParceiro)}</b>,
+            mas a indicação convertida e vigente registrada é de <b>{gestaoRefLabel(allData, "parceiros", conflitoParceiro.indicacaoParceiro)}</b>.
+            Nenhum repasse ao parceiro será gerado para este imóvel enquanto esse conflito não for corrigido — ajuste o campo do
+            imóvel ou a indicação para que os dois apontem para o mesmo parceiro.
+          </p>
+        </div>
+      )}
 
       <div className="grid g3">
         <div className="card">
@@ -4000,6 +4307,154 @@ function GestaoDashboard({ allData, setGestaoModule, onQuickNew }) {
 
 /* --------------------------- tela raiz da Gestão --------------------------- */
 
+/* --------------------------- reconciliação (diagnóstico) --------------------------- */
+// V2.3.3 — puramente diagnóstica: identifica e informa inconsistências,
+// nunca corrige nada sozinha. Recalculada a cada abertura da tela, a
+// partir dos dados reais — não salva nem altera nenhum registro.
+function gestaoDiagnostico(allData) {
+  const achados = []; // { nivel: "critico"|"atencao"|"inconsistencia", msg }
+  const add = (nivel, msg) => achados.push({ nivel, msg });
+  const existeId = (modulo, id) => (allData[modulo] || []).some((r) => r.id === id);
+
+  // B) financeiro apontando para reserva inexistente
+  (allData.financeiro || []).forEach((f) => {
+    if (f.reservaId && !existeId("reservas", f.reservaId)) add("critico", `Lançamento financeiro "${f.descricao || f.id}" referencia uma reserva que não existe mais.`);
+  });
+  // C) comissão apontando para reserva inexistente
+  (allData.comissoes || []).forEach((c) => {
+    if (c.reservaId && !existeId("reservas", c.reservaId)) add("critico", `Comissão "${c.periodo || c.id}" referencia uma reserva que não existe mais.`);
+    if (c.financeiroId && !existeId("financeiro", c.financeiroId)) add("critico", `Comissão "${c.periodo || c.id}" referencia um lançamento financeiro que não existe mais.`);
+  });
+  // F) repasse ao proprietário com comissão inexistente
+  (allData.repasses || []).forEach((r) => {
+    if (r.comissaoId && !existeId("comissoes", r.comissaoId)) add("critico", `Repasse ao proprietário "${r.periodo || r.id}" referencia uma comissão que não existe mais.`);
+  });
+  // G) repasse ao parceiro com origemComissaoId inexistente
+  (allData.repassesParceiros || []).forEach((r) => {
+    if (r.origemComissaoId && !existeId("comissoes", r.origemComissaoId)) add("critico", `Repasse ao parceiro "${r.periodo || r.id}" referencia uma comissão de origem que não existe mais.`);
+  });
+  // H) repasse ao parceiro sem indicação convertida correspondente
+  (allData.repassesParceiros || []).forEach((r) => {
+    const temIndicacao = (allData.indicacoes || []).some((i) => i.parceiroId === r.parceiroId && i.imovelId === r.imovelId && i.statusIndicacao === "Convertida");
+    if (!temIndicacao) add("atencao", `Repasse ao parceiro "${r.periodo || r.id}" não tem uma indicação "Convertida" correspondente para esse parceiro/imóvel.`);
+  });
+  // I) múltiplas comissões para a mesma reserva
+  const reservaIdsComComissao = {};
+  (allData.comissoes || []).forEach((c) => { if (c.reservaId) reservaIdsComComissao[c.reservaId] = (reservaIdsComComissao[c.reservaId] || 0) + 1; });
+  Object.entries(reservaIdsComComissao).forEach(([reservaId, n]) => { if (n > 1) add("critico", `${n} comissões diferentes apontam para a mesma reserva (${gestaoRefLabel(allData, "reservas", reservaId)}).`); });
+  // J) múltiplos repasses para o mesmo evento
+  const comissaoIdsComRepasse = {};
+  (allData.repasses || []).forEach((r) => { if (r.comissaoId) comissaoIdsComRepasse[r.comissaoId] = (comissaoIdsComRepasse[r.comissaoId] || 0) + 1; });
+  Object.entries(comissaoIdsComRepasse).forEach(([cid, n]) => { if (n > 1) add("critico", `${n} repasses ao proprietário apontam para a mesma comissão de origem.`); });
+  const origemIdsComRepasseParceiro = {};
+  (allData.repassesParceiros || []).forEach((r) => { if (r.origemComissaoId) origemIdsComRepasseParceiro[r.origemComissaoId] = (origemIdsComRepasseParceiro[r.origemComissaoId] || 0) + 1; });
+  Object.entries(origemIdsComRepasseParceiro).forEach(([cid, n]) => { if (n > 1) add("critico", `${n} repasses ao parceiro apontam para a mesma comissão de origem.`); });
+  // K) indicações convertidas conflitantes + L) divergência imóvel×indicação
+  (allData.imoveis || []).forEach((im) => {
+    const conflito = gestaoIndicacoesConflitantes(allData, im.id);
+    if (conflito) add("critico", `Imóvel "${im.nome}" tem ${conflito.length} indicações "Convertida" vigentes de parceiros diferentes.`);
+    const divergencia = gestaoParceiroConflito(allData, im.id);
+    if (divergencia) add("atencao", `Imóvel "${im.nome}": o campo "parceiro que indicou" diverge da indicação convertida vigente.`);
+  });
+  // 20) valorParticipacao ≠ 25% da comissaoRecebida
+  (allData.repassesParceiros || []).forEach((r) => {
+    const esperado = toNum(r.comissaoRecebida) * 0.25;
+    if (Math.abs(esperado - toNum(r.valorParticipacao)) > 0.01) add("critico", `Repasse ao parceiro "${r.periodo || r.id}": participação registrada (${fmtMoney(toNum(r.valorParticipacao))}) não corresponde a 25% da comissão recebida (${fmtMoney(esperado)}).`);
+  });
+  // M) datas inválidas em reservas
+  (allData.reservas || []).forEach((r) => {
+    if (r.checkin && r.checkout && r.checkout <= r.checkin) add("atencao", `Reserva de "${r.hospede || r.id}": check-out não é depois do check-in.`);
+  });
+  // A) reservas com valor mas sem lançamento financeiro (informativo)
+  (allData.reservas || []).forEach((r) => {
+    if (toNum(r.valor) > 0 && !gestaoReservaTemFinanceiro(allData, r.id)) add("inconsistencia", `Reserva de "${r.hospede || r.id}" tem valor mas ainda não gerou lançamento financeiro.`);
+  });
+  // 3.2 — reserva com financeiro mas sem comissão (um passo à frente da A;
+  // o financeiro já existe, então vale um pouco mais de atenção — mas
+  // continua sendo apenas "ainda não gerou", nunca corrigido sozinho).
+  (allData.reservas || []).forEach((r) => {
+    const fin = gestaoReservaTemFinanceiro(allData, r.id);
+    if (fin && !gestaoFinanceiroTemComissao(allData, fin.id)) add("atencao", `Reserva de "${r.hospede || r.id}" já tem lançamento financeiro, mas ainda não gerou comissão.`);
+  });
+  // 3.3 — comissão sem financeiroId: pode ser um registro manual/legado
+  // legítimo (a V2.3.2 introduziu esse campo; comissões de antes não o
+  // têm) — por isso fica em 🟡, não 🔴, salvo quando já for pega pela
+  // checagem de referência inválida acima.
+  (allData.comissoes || []).forEach((c) => {
+    if (!c.financeiroId) add("inconsistencia", `Comissão "${c.periodo || c.id}" não tem lançamento financeiro de origem vinculado (pode ser um registro manual/legado).`);
+  });
+  // 3.4 — repasse ao proprietário sem comissaoId (vazio, não inválido —
+  // isso já é 🔴 na checagem F acima): pode ser um repasse lançado à mão.
+  (allData.repasses || []).forEach((r) => {
+    if (!r.comissaoId) add("inconsistencia", `Repasse ao proprietário "${r.periodo || r.id}" não tem comissão de origem vinculada (pode ser um lançamento manual).`);
+  });
+  // 3.5 — repasse ao proprietário sem imóvel válido (imóvel é obrigatório
+  // para calcular a que operação o repasse pertence).
+  (allData.repasses || []).forEach((r) => {
+    if (!r.imovelId || !existeId("imoveis", r.imovelId)) add("critico", `Repasse ao proprietário "${r.periodo || r.id}" está sem um imóvel válido.`);
+  });
+  // 3.6 — repasse ao proprietário sem proprietário válido.
+  (allData.repasses || []).forEach((r) => {
+    if (!r.proprietarioId || !existeId("proprietarios", r.proprietarioId)) add("critico", `Repasse ao proprietário "${r.periodo || r.id}" está sem um proprietário válido.`);
+  });
+  // Correção 4 — início da participação do parceiro anterior ao início da
+  // gestão do imóvel: não é necessariamente um erro, mas merece revisão.
+  (allData.indicacoes || []).forEach((ind) => {
+    if (!ind.inicioParticipacao) return;
+    const imovel = (allData.imoveis || []).find((i) => i.id === ind.imovelId);
+    if (imovel && imovel.inicioGestao && ind.inicioParticipacao < imovel.inicioGestao) {
+      add("atencao", `Imóvel "${imovel.nome}": a participação do parceiro começa em ${ind.inicioParticipacao}, antes do início da gestão (${imovel.inicioGestao}).`);
+    }
+  });
+  // Correção 5 — período fora do formato recomendado (AAAA-MM). Só
+  // diagnóstico: nenhum registro existente é alterado.
+  const PERIODO_OK = /^\d{4}-\d{2}$/;
+  const checarPeriodo = (lista, rotulo) => {
+    (allData[lista] || []).forEach((r) => {
+      if (r.periodo && !PERIODO_OK.test(r.periodo.trim())) {
+        add("inconsistencia", `${rotulo} "${r.periodo}": período fora do formato recomendado (ex.: 2026-09).`);
+      }
+    });
+  };
+  checarPeriodo("comissoes", "Comissão");
+  checarPeriodo("repasses", "Repasse ao proprietário");
+  checarPeriodo("repassesParceiros", "Repasse ao parceiro");
+
+  return achados;
+}
+
+function GestaoReconciliacaoScreen({ allData }) {
+  const achados = gestaoDiagnostico(allData);
+  const cor = { critico: "var(--alert)", atencao: "var(--warm)", inconsistencia: "var(--mid)" };
+  const rotulo = { critico: "🔴 CRÍTICO", atencao: "🟠 ATENÇÃO", inconsistencia: "🟡 INCONSISTÊNCIA" };
+  const ordem = { critico: 0, atencao: 1, inconsistencia: 2 };
+  const ordenados = [...achados].sort((a, b) => ordem[a.nivel] - ordem[b.nivel]);
+  return (
+    <div>
+      <div className="eyebrow">Gestão de Imóveis</div>
+      <h1 className="page-title">Reconciliação / Integridade</h1>
+      <p className="page-sub">
+        Diagnóstico dos dados cadastrados — identifica inconsistências, mas nunca corrige nada sozinho. Recalculado
+        toda vez que você abre esta tela, a partir dos registros atuais.
+      </p>
+      <div className="card">
+        {ordenados.length === 0 ? (
+          <p className="footnote">Nenhuma inconsistência encontrada nos dados atuais.</p>
+        ) : (
+          <table className="rmi-table">
+            <thead><tr><th>Nível</th><th>Descrição</th></tr></thead>
+            <tbody>
+              {ordenados.map((a, i) => (
+                <tr key={i}><td style={{ color: cor[a.nivel], fontWeight: 700, whiteSpace: "nowrap" }}>{rotulo[a.nivel]}</td><td>{a.msg}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function GestaoScreen({ allData, setModuleData, gestaoModule, setGestaoModule }) {
   const [detail, setDetail] = useState(null); // { moduleKey, id } | null
   const [autoNewModule, setAutoNewModule] = useState(null);
@@ -4025,7 +4480,8 @@ function GestaoScreen({ allData, setModuleData, gestaoModule, setGestaoModule })
       {gestaoModule === "calendario" && <GestaoCalendarioScreen allData={allData} />}
       {gestaoModule === "financeiro" && <GestaoFinanceiroScreen allData={allData} setModuleData={setModuleData} onOpenDetail={handleOpenDetail} />}
       {gestaoModule === "onboarding" && <GestaoOnboardingScreen allData={allData} setModuleData={setModuleData} />}
-      {gestaoModule !== "calendario" && gestaoModule !== "financeiro" && gestaoModule !== "onboarding" && (
+      {gestaoModule === "reconciliacao" && <GestaoReconciliacaoScreen allData={allData} />}
+      {gestaoModule !== "calendario" && gestaoModule !== "financeiro" && gestaoModule !== "onboarding" && gestaoModule !== "reconciliacao" && (
         <GestaoCrudScreen
           moduleKey={gestaoModule} allData={allData} setModuleData={setModuleData} onOpenDetail={handleOpenDetail}
           autoNew={autoNewModule === gestaoModule} onAutoNewHandled={() => setAutoNewModule(null)}
