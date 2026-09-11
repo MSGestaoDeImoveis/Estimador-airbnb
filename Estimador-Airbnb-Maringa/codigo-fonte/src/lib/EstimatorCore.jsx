@@ -3043,6 +3043,7 @@ const GESTAO_SCHEMAS = {
       { key: "camas", label: "Camas", type: "number" },
       { key: "capacidade", label: "Capacidade", type: "number" },
       { key: "proprietarioId", label: "Proprietário", type: "ref", ref: "proprietarios", filterable: true },
+      { key: "parceiroId", label: "Parceiro que indicou", type: "ref", ref: "parceiros", filterable: true },
       { key: "status", label: "Status", type: "select", options: ["Ativo", "Onboarding", "Inativo"], filterable: true },
       { key: "telefoneOperacional", label: "Telefone operacional", type: "text" },
       { key: "inicioGestao", label: "Início da gestão", type: "date" },
@@ -3052,7 +3053,7 @@ const GESTAO_SCHEMAS = {
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
     columns: ["nome", "bairro", "tipo", "status"],
-    searchable: ["nome", "endereco", "bairro"],
+    searchable: ["nome", "endereco", "bairro", "proprietarioId", "parceiroId"],
   },
   proprietarios: {
     label: "Proprietários", displayField: "nome",
@@ -3160,7 +3161,7 @@ const GESTAO_SCHEMAS = {
       { key: "periodo", label: "Período", type: "text" },
       { key: "receita", label: "Receita (R$)", type: "number", money: true },
       { key: "percentual", label: "Percentual (%)", type: "number" },
-      { key: "status", label: "Status", type: "select", options: ["Pendente", "Paga"], filterable: true },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Recebida"], filterable: true },
       { key: "observacoes", label: "Observações", type: "textarea" },
     ],
     columns: ["imovelId", "periodo", "_comissaoCalc", "status"],
@@ -3206,10 +3207,57 @@ const GESTAO_SCHEMAS = {
     ],
     columns: ["tipo", "descricao", "valor", "data"],
   },
+  // NOVO — módulo interno "Parceiros" (controle operacional de indicações e
+  // comissões), diferente da aba 07 "Parceria com Corretores" (que é a
+  // proposta comercial/institucional). Não altera nada da aba 07.
+  parceiros: {
+    label: "Parceiros", displayField: "nome",
+    fields: [
+      { key: "nome", label: "Nome completo", type: "text", required: true },
+      { key: "empresa", label: "Imobiliária/Empresa", type: "text" },
+      { key: "telefone", label: "Telefone", type: "text" },
+      { key: "whatsapp", label: "WhatsApp", type: "text" },
+      { key: "email", label: "E-mail", type: "text" },
+      { key: "creci", label: "CRECI", type: "text" },
+      { key: "tipo", label: "Tipo de parceiro", type: "select", options: ["Corretor", "Imobiliária", "Consultor", "Parceiro comercial", "Outro"] },
+      { key: "codigoParceiro", label: "Código do parceiro", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Ativo", "Inativo"], filterable: true },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["nome", "empresa", "codigoParceiro", "status"],
+    searchable: ["nome", "empresa", "telefone", "email", "codigoParceiro"],
+  },
+  indicacoes: {
+    label: "Indicações", displayField: "dataIndicacao",
+    fields: [
+      { key: "parceiroId", label: "Parceiro", type: "ref", ref: "parceiros", filterable: true },
+      { key: "imovelId", label: "Imóvel indicado", type: "ref", ref: "imoveis", filterable: true },
+      { key: "dataIndicacao", label: "Data da indicação", type: "date" },
+      { key: "statusIndicacao", label: "Status da indicação", type: "select", options: ["Indicada", "Em análise", "Em negociação", "Convertida", "Não convertida", "Cancelada"], filterable: true },
+      { key: "inicioParticipacao", label: "Início da participação (12 meses)", type: "date" },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["parceiroId", "imovelId", "dataIndicacao", "statusIndicacao", "_periodoParceiro"],
+  },
+  repassesParceiros: {
+    label: "Repasses a Parceiros", displayField: "periodo",
+    fields: [
+      { key: "parceiroId", label: "Parceiro", type: "ref", ref: "parceiros", filterable: true },
+      { key: "imovelId", label: "Imóvel", type: "ref", ref: "imoveis" },
+      { key: "periodo", label: "Período", type: "text" },
+      { key: "comissaoRecebida", label: "Comissão de gestão recebida pela MS (R$)", type: "number", money: true },
+      { key: "valorParticipacao", label: "Participação do parceiro — 25% (R$)", type: "number", money: true },
+      { key: "status", label: "Status", type: "select", options: ["Pendente", "Em processamento", "Pago", "Cancelado"], filterable: true },
+      { key: "dataPrevista", label: "Data prevista", type: "date" },
+      { key: "dataPagamento", label: "Data do pagamento", type: "date" },
+      { key: "observacoes", label: "Observações", type: "textarea" },
+    ],
+    columns: ["parceiroId", "imovelId", "periodo", "valorParticipacao", "status"],
+  },
 };
 
-const GESTAO_MODULE_ORDER = ["imoveis", "proprietarios", "reservas", "calendario", "limpeza", "lavanderia", "enxoval", "manutencao", "prestadores", "financeiro", "comissoes", "repasses", "onboarding", "pendencias"];
-const GESTAO_MODULE_ICON = { imoveis: "building", proprietarios: "handshake", reservas: "presentation", calendario: "clock", limpeza: "grid", lavanderia: "grid", enxoval: "grid", manutencao: "gear", prestadores: "handshake", financeiro: "bolt", comissoes: "bolt", repasses: "bolt", onboarding: "book", pendencias: "gear" };
+const GESTAO_MODULE_ORDER = ["imoveis", "proprietarios", "reservas", "calendario", "limpeza", "lavanderia", "enxoval", "manutencao", "prestadores", "financeiro", "comissoes", "repasses", "onboarding", "pendencias", "parceiros", "indicacoes", "repassesParceiros"];
+const GESTAO_MODULE_ICON = { imoveis: "building", proprietarios: "handshake", reservas: "presentation", calendario: "clock", limpeza: "grid", lavanderia: "grid", enxoval: "grid", manutencao: "gear", prestadores: "handshake", financeiro: "bolt", comissoes: "bolt", repasses: "bolt", onboarding: "book", pendencias: "gear", parceiros: "handshake", indicacoes: "building", repassesParceiros: "bolt" };
 const GESTAO_MODULE_LABEL = { ...Object.fromEntries(Object.entries(GESTAO_SCHEMAS).map(([k, v]) => [k, v.label])), calendario: "Calendário", onboarding: "Onboarding" };
 const GESTAO_MODULE_DESC = {
   imoveis: "Cadastro e gerenciamento", proprietarios: "Gestão de proprietários", reservas: "Controle de reservas",
@@ -3217,6 +3265,7 @@ const GESTAO_MODULE_DESC = {
   enxoval: "Controle de enxoval", manutencao: "Solicitações e histórico", prestadores: "Fornecedores e serviços",
   financeiro: "Receitas e despesas", comissoes: "Comissões e pagamentos", repasses: "Repasses a proprietários",
   onboarding: "Entrada de novos imóveis", pendencias: "Acompanhamento de tarefas",
+  parceiros: "Controle interno de parceiros", indicacoes: "Imóveis indicados por parceiros", repassesParceiros: "Repasses a parceiros (25%)",
 };
 
 const ONBOARDING_GRUPOS = [
@@ -3246,6 +3295,50 @@ function gestaoRepasseLiquido(rec) { return toNum(rec.receita) - toNum(rec.despe
 function gestaoPendenciaAtrasada(rec) {
   const d = gestaoDaysFromToday(rec.prazo);
   return d !== null && d < 0 && rec.status !== "Concluída";
+}
+
+// NOVO — helpers do controle de Parceiros: janela de 12 meses de
+// participação, contados sempre a partir da data real de início
+// (nunca um número fixo de meses "no vácuo").
+function gestaoFimParticipacao(inicioParticipacao) {
+  if (!inicioParticipacao) return null;
+  const d = new Date(inicioParticipacao + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return null;
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+function gestaoParticipacaoStatus(indicacao) {
+  if (!indicacao || !indicacao.inicioParticipacao) return "—";
+  const fim = gestaoFimParticipacao(indicacao.inicioParticipacao);
+  const diasParaFim = gestaoDaysFromToday(fim);
+  if (diasParaFim === null) return "—";
+  if (diasParaFim < 0) return "Encerrada";
+  if (diasParaFim <= 30) return "Próxima do vencimento";
+  return "Ativa";
+}
+// Indicação "convertida" e vigente (dentro dos 12 meses) para um imóvel —
+// é essa indicação que autoriza gerar participação de parceiro.
+function gestaoIndicacaoVigente(allData, imovelId) {
+  const indicacoes = allData.indicacoes || [];
+  return indicacoes.find((i) => i.imovelId === imovelId && i.statusIndicacao === "Convertida" && gestaoParticipacaoStatus(i) !== "Encerrada" && gestaoParticipacaoStatus(i) !== "—");
+}
+function gestaoRepasseParceiroElegivel(allData, comissao) {
+  if (comissao.status !== "Recebida") return null;
+  const indicacao = gestaoIndicacaoVigente(allData, comissao.imovelId);
+  if (!indicacao) return null;
+  // Regra de duplicidade: cada comissão só pode gerar UM repasse ao parceiro.
+  const jaGerado = (allData.repassesParceiros || []).some((r) => r.origemComissaoId === comissao.id);
+  if (jaGerado) return null;
+  return indicacao;
+}
+// Código único do parceiro (PAR-0001, PAR-0002…) — deriva do maior número já
+// usado entre os parceiros cadastrados, então nunca repete mesmo que um
+// parceiro anterior tenha sido excluído.
+function gestaoNextParceiroCode(allData) {
+  const existentes = (allData.parceiros || []).map((p) => p.codigoParceiro || "");
+  let maxN = 0;
+  existentes.forEach((c) => { const m = /^PAR-(\d+)$/.exec(c); if (m) maxN = Math.max(maxN, parseInt(m[1], 10)); });
+  return `PAR-${String(maxN + 1).padStart(4, "0")}`;
 }
 
 /* --------------------------- formulário/campo genéricos --------------------------- */
@@ -3285,10 +3378,26 @@ function GestaoForm({ moduleKey, initial, onSave, onCancel, allData }) {
       <div className="grid g2">
         {schema.fields.map((f) => (
           <Field key={f.key} label={f.label + (f.required ? " *" : "")}>
-            <GestaoField field={f} value={item[f.key]} onChange={(v) => set(f.key, v)} allData={allData} />
+            {moduleKey === "parceiros" && f.key === "codigoParceiro" ? (
+              <div className="hstack">
+                <GestaoField field={f} value={item[f.key]} onChange={(v) => set(f.key, v)} allData={allData} />
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => set("codigoParceiro", gestaoNextParceiroCode(allData))}>Gerar</button>
+              </div>
+            ) : (
+              <GestaoField field={f} value={item[f.key]} onChange={(v) => set(f.key, v)} allData={allData} />
+            )}
           </Field>
         ))}
       </div>
+      {moduleKey === "parceiros" && item.codigoParceiro && (allData.parceiros || []).some((p) => p.codigoParceiro === item.codigoParceiro && p.id !== item.id) && (
+        <p className="footnote" style={{ marginTop: 8, color: "var(--alert)", fontWeight: 700 }}>Este código já está em uso por outro parceiro — escolha outro ou clique em "Gerar".</p>
+      )}
+      {moduleKey === "indicacoes" && item.inicioParticipacao && (
+        <p className="footnote" style={{ marginTop: 10 }}>
+          Participação de 12 meses: {item.inicioParticipacao} até <b>{gestaoFimParticipacao(item.inicioParticipacao)}</b> — status atual: <b>{gestaoParticipacaoStatus(item)}</b>.
+          {item.statusIndicacao !== "Convertida" && " Só gera participação de comissão quando o status for \"Convertida\"."}
+        </p>
+      )}
       {moduleKey === "comissoes" && toNum(item.receita) > 0 && toNum(item.percentual) > 0 && (
         <p className="footnote" style={{ marginTop: 10 }}>Comissão calculada automaticamente: <b>{fmtMoney(gestaoComissaoValor(item))}</b> ({toNum(item.percentual)}% de {fmtMoney(toNum(item.receita))})</p>
       )}
@@ -3306,6 +3415,10 @@ function GestaoForm({ moduleKey, initial, onSave, onCancel, allData }) {
         <button className="btn btn-primary" onClick={() => {
           const req = schema.fields.find((f) => f.required && !String(item[f.key] || "").trim());
           if (req) { window.alert(`Preencha o campo "${req.label}".`); return; }
+          if (moduleKey === "parceiros" && item.codigoParceiro && (allData.parceiros || []).some((p) => p.codigoParceiro === item.codigoParceiro && p.id !== item.id)) {
+            window.alert("Este código de parceiro já está em uso. Escolha outro ou clique em \"Gerar\".");
+            return;
+          }
           onSave({ ...item, id: item.id || uid() });
         }}>Salvar</button>
         <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
@@ -3325,6 +3438,11 @@ function gestaoCellValue(allData, schema, moduleKey, it, c) {
   if (c === "_comissaoCalc") return fmtMoney(gestaoComissaoValor(it));
   if (c === "_liquidoCalc") return fmtMoney(gestaoRepasseLiquido(it));
   if (c === "_atrasada") return gestaoPendenciaAtrasada(it) ? <span style={{ color: "var(--alert)", fontWeight: 700 }}>Atrasada</span> : "—";
+  if (c === "_periodoParceiro") {
+    const st = gestaoParticipacaoStatus(it);
+    const cor = st === "Ativa" ? "var(--good)" : st === "Próxima do vencimento" ? "var(--warm)" : st === "Encerrada" ? "var(--ink-faint)" : "var(--ink-faint)";
+    return st === "—" ? "—" : <span style={{ color: cor, fontWeight: 700 }}>{st}</span>;
+  }
   const field = schema.fields.find((f) => f.key === c);
   if (!field) return it[c] || "—";
   if (field.type === "ref") return gestaoRefLabel(allData, field.ref, it[c]);
@@ -3345,7 +3463,11 @@ function GestaoCrudScreen({ moduleKey, allData, setModuleData, onOpenDetail, aut
   const filtered = items.filter((it) => {
     if (busca.trim() && schema.searchable) {
       const q = busca.trim().toLowerCase();
-      const matches = schema.searchable.some((k) => String(it[k] || "").toLowerCase().includes(q));
+      const matches = schema.searchable.some((k) => {
+        const field = schema.fields.find((f) => f.key === k);
+        const val = field && field.type === "ref" ? gestaoRefLabel(allData, field.ref, it[k]) : it[k];
+        return String(val || "").toLowerCase().includes(q);
+      });
       if (!matches) return false;
     }
     for (const f of filterableFields) {
@@ -3399,14 +3521,27 @@ function GestaoCrudScreen({ moduleKey, allData, setModuleData, onOpenDetail, aut
       <div className="card" style={{ marginTop: 16 }}>
         <table className="rmi-table">
           <thead>
-            <tr>{schema.columns.map((c) => <th key={c}>{c.startsWith("_") ? (c === "_reposicao" ? "Estoque" : c === "_comissaoCalc" ? "Comissão" : c === "_liquidoCalc" ? "Líquido" : c === "_atrasada" ? "" : c) : (schema.fields.find((f) => f.key === c)?.label || c)}</th>)}<th></th></tr>
+            <tr>{schema.columns.map((c) => <th key={c}>{c.startsWith("_") ? (c === "_reposicao" ? "Estoque" : c === "_comissaoCalc" ? "Comissão" : c === "_liquidoCalc" ? "Líquido" : c === "_atrasada" ? "" : c === "_periodoParceiro" ? "Participação" : c) : (schema.fields.find((f) => f.key === c)?.label || c)}</th>)}<th></th></tr>
           </thead>
           <tbody>
             {filtered.map((it) => (
               <tr key={it.id}>
                 {schema.columns.map((c) => <td key={c}>{gestaoCellValue(allData, schema, moduleKey, it, c)}</td>)}
                 <td className="hstack">
-                  {onOpenDetail && (moduleKey === "imoveis" || moduleKey === "proprietarios") && <button className="link-btn" onClick={() => onOpenDetail(moduleKey, it.id)}>detalhes</button>}
+                  {onOpenDetail && (moduleKey === "imoveis" || moduleKey === "proprietarios" || moduleKey === "parceiros") && <button className="link-btn" onClick={() => onOpenDetail(moduleKey, it.id)}>detalhes</button>}
+                  {moduleKey === "comissoes" && gestaoRepasseParceiroElegivel(allData, it) && (
+                    <button className="link-btn" onClick={() => {
+                      const indicacao = gestaoRepasseParceiroElegivel(allData, it);
+                      const valorMS = gestaoComissaoValor(it);
+                      const novo = {
+                        id: uid(), parceiroId: indicacao.parceiroId, imovelId: it.imovelId, periodo: it.periodo,
+                        comissaoRecebida: valorMS, valorParticipacao: valorMS * 0.25, status: "Pendente",
+                        origemComissaoId: it.id,
+                      };
+                      setModuleData("repassesParceiros", [...(allData.repassesParceiros || []), novo]);
+                      window.alert("Repasse ao parceiro gerado (25% da comissão recebida). Veja em \"Repasses a Parceiros\".");
+                    }}>gerar repasse ao parceiro</button>
+                  )}
                   <button className="link-btn" onClick={() => setEditing(it)}>editar</button>
                   <button className="link-btn" style={{ color: "var(--alert)" }} onClick={() => handleDelete(it.id)}>excluir</button>
                 </td>
@@ -3439,6 +3574,10 @@ function GestaoImovelDetail({ imovelId, allData, onVoltar }) {
   const despesas = financeiro.filter((f) => f.tipo === "Despesa").reduce((s, f) => s + toNum(f.valor), 0);
   const onboardingChecklist = (allData.onboardingChecklists || {})[imovelId] || {};
   const concluidas = Object.values(onboardingChecklist).filter(Boolean).length;
+  const indicacao = (allData.indicacoes || []).filter((i) => i.imovelId === imovelId).sort((a, b) => String(b.dataIndicacao || "").localeCompare(String(a.dataIndicacao || "")))[0];
+  const repassesParceiro = (allData.repassesParceiros || []).filter((r) => r.imovelId === imovelId);
+  const pagoParceiro = repassesParceiro.filter((r) => r.status === "Pago").reduce((s, r) => s + toNum(r.valorParticipacao), 0);
+  const pendenteParceiro = repassesParceiro.filter((r) => r.status !== "Pago" && r.status !== "Cancelado").reduce((s, r) => s + toNum(r.valorParticipacao), 0);
 
   return (
     <div>
@@ -3466,6 +3605,20 @@ function GestaoImovelDetail({ imovelId, allData, onVoltar }) {
           <div className="footnote"><b style={{ color: "var(--ink)" }}>{ONBOARDING_TOTAL_ITENS > 0 ? Math.round((concluidas / ONBOARDING_TOTAL_ITENS) * 100) : 0}%</b></div>
         </div>
       </div>
+
+      {(indicacao || imovel.parceiroId) && (
+        <div className="card" style={{ marginTop: 14 }}>
+          <div className="card-title">Parceiro</div>
+          <div className="footnote">Parceiro que indicou: <b style={{ color: "var(--ink)" }}>{gestaoRefLabel(allData, "parceiros", imovel.parceiroId || (indicacao && indicacao.parceiroId))}</b></div>
+          {indicacao && (
+            <>
+              <div className="footnote">Data da indicação: <b style={{ color: "var(--ink)" }}>{indicacao.dataIndicacao || "—"}</b> · Status: <b style={{ color: "var(--ink)" }}>{indicacao.statusIndicacao || "—"}</b></div>
+              <div className="footnote">Início da participação: <b style={{ color: "var(--ink)" }}>{indicacao.inicioParticipacao || "—"}</b> · Fim dos 12 meses: <b style={{ color: "var(--ink)" }}>{gestaoFimParticipacao(indicacao.inicioParticipacao) || "—"}</b> · Situação: <b style={{ color: "var(--ink)" }}>{gestaoParticipacaoStatus(indicacao)}</b></div>
+            </>
+          )}
+          <div className="footnote">Total pago ao parceiro: <b style={{ color: "var(--good)" }}>{fmtMoney(pagoParceiro)}</b> · Pendente: <b style={{ color: "var(--alert)" }}>{fmtMoney(pendenteParceiro)}</b></div>
+        </div>
+      )}
 
       <div className="card" style={{ marginTop: 14 }}>
         <div className="card-title">Próximas reservas</div>
@@ -3508,6 +3661,68 @@ function GestaoProprietarioDetail({ proprietarioId, allData, onVoltar }) {
           <tbody>
             {repasses.map((r) => <tr key={r.id}><td>{r.periodo}</td><td>{fmtMoney(gestaoRepasseLiquido(r))}</td><td>{r.status}</td></tr>)}
             {repasses.length === 0 && <tr><td colSpan={3} className="footnote" style={{ padding: 16 }}>Nenhum repasse registrado ainda.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function GestaoParceiroDetail({ parceiroId, allData, onVoltar }) {
+  const parceiro = (allData.parceiros || []).find((x) => x.id === parceiroId);
+  if (!parceiro) return <div><button className="link-btn" onClick={onVoltar}>← Voltar</button><p className="footnote" style={{ marginTop: 12 }}>Parceiro não encontrado.</p></div>;
+  const indicacoes = (allData.indicacoes || []).filter((i) => i.parceiroId === parceiroId);
+  const convertidas = indicacoes.filter((i) => i.statusIndicacao === "Convertida");
+  const naoConvertidas = indicacoes.filter((i) => i.statusIndicacao === "Não convertida" || i.statusIndicacao === "Cancelada");
+  const repasses = (allData.repassesParceiros || []).filter((r) => r.parceiroId === parceiroId);
+  const gerado = repasses.reduce((s, r) => s + toNum(r.valorParticipacao), 0);
+  const pago = repasses.filter((r) => r.status === "Pago").reduce((s, r) => s + toNum(r.valorParticipacao), 0);
+  const pendente = repasses.filter((r) => r.status !== "Pago" && r.status !== "Cancelado").reduce((s, r) => s + toNum(r.valorParticipacao), 0);
+
+  return (
+    <div>
+      <button className="link-btn" onClick={onVoltar}>← Voltar para Parceiros</button>
+      <h1 className="page-title" style={{ marginTop: 10 }}>{parceiro.nome}</h1>
+      <p className="page-sub">{parceiro.empresa || "—"} · Código: {parceiro.codigoParceiro || "—"} · {parceiro.telefone || "—"} · Status: {parceiro.status || "—"}</p>
+
+      <div className="grid g3">
+        <div className="card">
+          <div className="card-title">Indicações</div>
+          <div className="footnote">{indicacoes.length} imóveis indicados</div>
+          <div className="footnote">{convertidas.length} convertidos em gestão</div>
+          <div className="footnote">{naoConvertidas.length} não convertidos</div>
+        </div>
+        <div className="card">
+          <div className="card-title">Comissões (participação)</div>
+          <div className="footnote">Geradas: <b style={{ color: "var(--ink)" }}>{fmtMoney(gerado)}</b></div>
+          <div className="footnote">Pagas: <b style={{ color: "var(--good)" }}>{fmtMoney(pago)}</b></div>
+          <div className="footnote">Pendentes: <b style={{ color: "var(--alert)" }}>{fmtMoney(pendente)}</b></div>
+        </div>
+        <div className="card">
+          <div className="card-title">Contato</div>
+          <div className="footnote">WhatsApp: <b style={{ color: "var(--ink)" }}>{parceiro.whatsapp || "—"}</b></div>
+          <div className="footnote">E-mail: <b style={{ color: "var(--ink)" }}>{parceiro.email || "—"}</b></div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="card-title">Imóveis indicados</div>
+        <table className="rmi-table">
+          <thead><tr><th>Imóvel</th><th>Data</th><th>Status</th><th>Participação</th></tr></thead>
+          <tbody>
+            {indicacoes.map((i) => <tr key={i.id}><td>{gestaoRefLabel(allData, "imoveis", i.imovelId)}</td><td>{i.dataIndicacao}</td><td>{i.statusIndicacao}</td><td>{gestaoParticipacaoStatus(i)}</td></tr>)}
+            {indicacoes.length === 0 && <tr><td colSpan={4} className="footnote" style={{ padding: 16 }}>Nenhuma indicação registrada ainda.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="card-title">Repasses</div>
+        <table className="rmi-table">
+          <thead><tr><th>Imóvel</th><th>Período</th><th>Valor</th><th>Status</th></tr></thead>
+          <tbody>
+            {repasses.map((r) => <tr key={r.id}><td>{gestaoRefLabel(allData, "imoveis", r.imovelId)}</td><td>{r.periodo}</td><td>{fmtMoney(toNum(r.valorParticipacao))}</td><td>{r.status}</td></tr>)}
+            {repasses.length === 0 && <tr><td colSpan={4} className="footnote" style={{ padding: 16 }}>Nenhum repasse registrado ainda.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3679,6 +3894,12 @@ function GestaoDashboard({ allData, setGestaoModule, onQuickNew }) {
   const repassesPendentes = repasses.filter((r) => r.status === "Pendente").length;
   const manutencoesAbertas = manutencao.filter((m) => m.status !== "Concluída" && m.status !== "Cancelada").length;
   const imoveisOnboarding = imoveis.filter((i) => i.status === "Onboarding").length;
+  const parceiros = allData.parceiros || [];
+  const indicacoes = allData.indicacoes || [];
+  const repassesParceiros = allData.repassesParceiros || [];
+  const parceirosAtivos = parceiros.filter((p) => p.status === "Ativo").length;
+  const imoveisIndicados = indicacoes.length;
+  const repassesParceirosPendentes = repassesParceiros.filter((r) => r.status === "Pendente").length;
 
   const atividades = [];
   reservas.forEach((r) => {
@@ -3702,10 +3923,13 @@ function GestaoDashboard({ allData, setGestaoModule, onQuickNew }) {
     { label: "Receita do mês", value: fmtMoney(receitaMes), destaque: "good" },
     { label: "Despesas do mês", value: fmtMoney(despesaMes), destaque: "alert" },
     { label: "Resultado do mês", value: fmtMoney(receitaMes - despesaMes) },
-    { label: "Repasses pendentes", value: repassesPendentes },
+    { label: "Repasses pendentes (proprietários)", value: repassesPendentes },
     { label: "Manutenções abertas", value: manutencoesAbertas },
     { label: "Imóveis em onboarding", value: imoveisOnboarding },
     { label: "Pendências atrasadas", value: pendenciasAtrasadas, destaque: pendenciasAtrasadas > 0 ? "alert" : undefined },
+    { label: "Parceiros ativos", value: parceirosAtivos },
+    { label: "Imóveis indicados por parceiros", value: imoveisIndicados },
+    { label: "Repasses pendentes (parceiros)", value: repassesParceirosPendentes },
   ];
 
   return (
@@ -3790,6 +4014,9 @@ function GestaoScreen({ allData, setModuleData, gestaoModule, setGestaoModule })
   }
   if (detail && detail.moduleKey === "proprietarios") {
     return <div><GestaoProprietarioDetail proprietarioId={detail.id} allData={allData} onVoltar={() => setDetail(null)} /></div>;
+  }
+  if (detail && detail.moduleKey === "parceiros") {
+    return <div><GestaoParceiroDetail parceiroId={detail.id} allData={allData} onVoltar={() => setDetail(null)} /></div>;
   }
 
   return (

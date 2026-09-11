@@ -176,6 +176,77 @@ cada página do estudo vira uma página própria do PDF (evita cortar
 cards ao meio). Nenhuma das duas versões mostra endereço/identidade de
 comparáveis individuais, scores, pesos ou custos internos.
 
+## Atualização (v2.3.1): módulo interno de Parceiros + busca por parceiro
+
+Continuação puramente funcional da atualização anterior — mesma regra:
+nenhuma mudança visual, nada tocado nos módulos 01–07, PDFs, cálculos ou
+importações/exportações. Confirmei de novo por diff direto: todo o
+código até o fim da `ParceriaScreen` (aba 07) é idêntico, linha por
+linha, ao da versão anterior.
+
+**Novo módulo dentro da Gestão: Parceiros** — separado e independente da
+aba 07 "Parceria com Corretores" (que continua sendo a proposta
+comercial/institucional; este é o controle operacional interno):
+
+- Cadastro de parceiros com código único (`PAR-0001`, gerado com um
+  clique) — testei que o formulário recusa salvar um código repetido.
+- **Indicações**: liga um parceiro a um imóvel, com status do funil
+  (Indicada → Em análise → Em negociação → Convertida → Não
+  convertida/Cancelada) e a janela de participação de 12 meses,
+  calculada sempre a partir da data real de início (não um número fixo)
+  — testei e o sistema calculou corretamente "2026-09-11 até
+  2027-09-11" a partir de uma indicação convertida hoje.
+- **Cálculo automático dos 25%**: quando uma Comissão (dentro da
+  Gestão) é marcada como "Recebida" e existe uma indicação convertida e
+  vigente para aquele imóvel, aparece o botão "gerar repasse ao
+  parceiro", que calcula 25% da comissão de gestão da MS — testei com
+  R$1.200 de receita × 20% = R$240 de comissão da MS → 25% disso =
+  **R$60** para o parceiro, e bateu exatamente.
+- **As três regras de segurança do pedido, testadas isoladamente:**
+  - O botão só aparece quando a comissão está "Recebida" (testei uma
+    comissão "Pendente" e o botão não apareceu).
+  - **Não duplica**: gerei o repasse, o botão some, e confirmei que só
+    existe 1 registro de repasse — nunca dois para a mesma comissão.
+  - **Respeita os 12 meses**: com uma indicação de 400 dias atrás, o
+    sistema mostrou "Encerrada" e não permitiu gerar repasse mesmo com
+    a comissão recebida.
+- Repasse ao parceiro é uma estrutura **totalmente separada** do
+  Repasse ao proprietário (tabelas diferentes, cálculos diferentes,
+  nunca se misturam).
+- Telas de detalhe: Imóvel agora mostra uma seção "Parceiro" (quem
+  indicou, situação da participação, total pago/pendente); Parceiro
+  mostra os imóveis indicados, quantos converteram, e o resumo de
+  comissões geradas/pagas/pendentes.
+- Busca de Imóveis agora também encontra por proprietário ou parceiro
+  (antes só buscava por nome/endereço/bairro), e há um novo filtro por
+  parceiro.
+- Dashboard ganhou 3 indicadores novos: parceiros ativos, imóveis
+  indicados por parceiros, e repasses pendentes aos parceiros
+  (separado do indicador de repasses pendentes aos proprietários).
+
+**O que não implementei desta vez** (por ficarem de fora do escopo
+central ou exigirem mais tempo do que o razoável numa só entrega):
+mini-gráfico de evolução financeira no Dashboard (os totais numéricos já
+cobrem a mesma necessidade) e os botões de "ação rápida" dentro do
+detalhe do imóvel (nova reserva/limpeza a partir de lá) — por enquanto
+essas ações continuam disponíveis normalmente pelos módulos.
+
+### Testes realizados (roteiro das 28 etapas, num navegador real)
+
+Cadastrei proprietário → parceiro (com código gerado e validado contra
+duplicidade) → imóvel relacionado aos dois → indicação convertida →
+conferi a janela de 12 meses → criei uma comissão de R$1.200 a 20%
+marcada como "Recebida" → gerei o repasse ao parceiro e confirmei
+R$60 (25% de R$240) → tentei gerar de novo e o botão já não aparecia
+mais → testei um cenário separado com participação vencida há 400 dias
+e confirmei que o botão não aparece mesmo com a comissão recebida →
+abri o detalhe do imóvel e vi a seção Parceiro certa → abri o detalhe
+do parceiro e vi as indicações e comissões certas → recarreguei a
+página e tudo continuou lá → e por fim rodei a regressão completa
+(Análise Rápida, Estudo em PDF de 6 páginas, Histórico, Proposta de
+Parceria em PDF de 7 páginas, 30 comparáveis intactos) — tudo
+funcionando exatamente como antes.
+
 ## Atualização (v2.3): Gestão de Imóveis vira uma Central Operacional integrada
 
 Esta atualização foi **só funcional** — nenhuma mudança visual, nenhum
