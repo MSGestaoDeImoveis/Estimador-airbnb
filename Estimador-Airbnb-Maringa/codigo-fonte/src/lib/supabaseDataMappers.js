@@ -44,6 +44,102 @@ export function appToRow(obj) {
   return out;
 }
 
+// =============================================================================
+// CORREÇÃO (auditoria preventiva de compatibilidade com o PostgreSQL) —
+// erro real em produção: PostgreSQL 22P02 "invalid input syntax for type
+// numeric" ao criar um comparável com um campo numérico opcional vazio.
+// Causa raiz: `appToRow` (acima) nunca conheceu o tipo da coluna de
+// destino — ela só renomeia chaves, então uma string vazia "" digitada
+// num campo numérico/data, ou um campo de referência (FK) deixado em
+// "—", chegava ao Postgres exatamente como "", que não é um valor válido
+// para colunas `numeric`/`integer`/`date`, e para uma coluna de FK "" é
+// tratada como um valor de texto que não corresponde a nenhum registro
+// (erro de FK, 23503) — em nenhum dos dois casos "" significa a mesma
+// coisa que "o usuário não preencheu".
+//
+// A correção é consciente do tipo da coluna, por tabela: só os campos
+// abaixo (numéricos, de data, ou referências opcionais) recebem a
+// conversão "" → null. Qualquer coluna de texto, boolean ou jsonb não
+// listada aqui passa por `appToRow` exatamente como sempre passou — "",
+// 0, false, null e o conteúdo de colunas jsonb continuam intocados.
+const TIPOS_ESPECIAIS_POR_TABELA = {
+  comparables: {
+    quartos: "numero", banheiros: "numero", area: "numero", capacidade: "numero", camas: "numero",
+    diaria: "numero", taxa_limpeza: "numero", nota: "numero", avaliacoes: "numero", data_pesquisa: "data",
+  },
+  settings: {
+    comissao_pct: "numero", noites_mes: "numero", duracao_media_estadia: "numero",
+  },
+  imoveis: {
+    quartos: "numero", banheiros: "numero", camas: "numero", capacidade: "numero",
+    proprietario_id: "fk", parceiro_id: "fk", inicio_gestao: "data", percentual_comissao: "numero",
+  },
+  reservas: {
+    imovel_id: "fk", checkin: "data", checkout: "data", valor: "numero", taxas: "numero",
+  },
+  indicacoes: {
+    parceiro_id: "fk", imovel_id: "fk", data_indicacao: "data", inicio_participacao: "data",
+  },
+  limpeza: {
+    imovel_id: "fk", reserva_id: "fk", data: "data",
+  },
+  lavanderia: {
+    imovel_id: "fk", envio: "data", recebimento: "data", quantidade: "numero",
+  },
+  enxoval: {
+    imovel_id: "fk", quantidade_necessaria: "numero", quantidade_atual: "numero", estoque_minimo: "numero",
+  },
+  manutencao: {
+    imovel_id: "fk", data: "data", prestador_id: "fk", custo: "numero",
+  },
+  pendencias: {
+    imovel_id: "fk", prazo: "data",
+  },
+  onboarding_checklist_itens: {
+    imovel_id: "fk",
+  },
+  financeiro: {
+    imovel_id: "fk", reserva_id: "fk", valor: "numero", data: "data",
+  },
+  comissoes: {
+    imovel_id: "fk", reserva_id: "fk", financeiro_id: "fk", receita: "numero", percentual: "numero",
+  },
+  repasses: {
+    proprietario_id: "fk", imovel_id: "fk", comissao_id: "fk", receita: "numero", despesas: "numero", comissao: "numero", data: "data",
+  },
+  repasses_parceiros: {
+    parceiro_id: "fk", imovel_id: "fk", comissao_recebida: "numero", valor_participacao: "numero",
+    data_prevista: "data", data_pagamento: "data", origem_comissao_id: "fk",
+  },
+};
+
+// Só "" e `undefined` (quando a chave está mesmo presente no objeto) viram
+// `null` — e só para os tipos "numero"/"data"/"fk" acima. Qualquer outro
+// valor (número real, string não vazia, 0, false, null, um id válido)
+// passa exatamente como está, sem nenhuma outra transformação.
+function sanitizarValorPorTipo(valor, tipo) {
+  if ((tipo === "numero" || tipo === "data" || tipo === "fk") && (valor === "" || valor === undefined)) {
+    return null;
+  }
+  return valor;
+}
+
+// Mesma função que `appToRow`, mas recebendo também o nome da tabela de
+// destino (snake_case, o mesmo nome já usado em `makeListRepo`/
+// `makeSingletonRepo`), para poder consultar `TIPOS_ESPECIAIS_POR_TABELA`
+// e sanear só os campos que precisam. Tabelas ou colunas ausentes do mapa
+// acima não sofrem nenhuma alteração — o comportamento de `appToRow` é
+// preservado por padrão.
+export function appToRowSeguro(obj, table) {
+  const tipos = TIPOS_ESPECIAIS_POR_TABELA[table] || {};
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const dbKey = camelToSnake(k);
+    out[dbKey] = sanitizarValorPorTipo(v, tipos[dbKey]);
+  }
+  return out;
+}
+
 // `type` é um destes valores fixos, para quem consome a camada poder
 // decidir o que fazer sem precisar entender códigos do Postgres:
 //   "not_found"   registro não existe (ou RLS escondeu por não ser seu)

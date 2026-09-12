@@ -31,7 +31,7 @@
 // =============================================================================
 
 import { supabase } from "./supabaseClient.js";
-import { appToRow, camelToSnake, fail, ok, rowToApp } from "./supabaseDataMappers.js";
+import { appToRowSeguro, camelToSnake, fail, ok, rowToApp } from "./supabaseDataMappers.js";
 
 /* -----------------------------------------------------------------------
    USUÁRIO AUTENTICADO
@@ -82,7 +82,12 @@ function makeListRepo(table, { idField = "id" } = {}) {
       if (!item || !item[idField]) return fail({ message: `Campo "${idField}" é obrigatório para criar.`, code: "validation" });
       const userId = await getCurrentUserId();
       if (!userId) return fail({ message: "Sem sessão autenticada.", code: "42501" });
-      const row = { ...appToRow(item), user_id: userId };
+      // CORREÇÃO (auditoria preventiva) — appToRowSeguro converte "" para
+      // null só nas colunas numéricas/data/referência conhecidas desta
+      // tabela (ver TIPOS_ESPECIAIS_POR_TABELA em supabaseDataMappers.js);
+      // qualquer outra coluna continua exatamente como appToRow sempre
+      // devolveu.
+      const row = { ...appToRowSeguro(item, table), user_id: userId };
       const { data, error } = await supabase.from(table).insert(row).select().single();
       if (error) return fail(error);
       return ok(rowToApp(data));
@@ -90,7 +95,7 @@ function makeListRepo(table, { idField = "id" } = {}) {
 
     async update(id, patch) {
       if (!id) return fail({ message: `${idField} é obrigatório.`, code: "validation" });
-      const row = appToRow(patch);
+      const row = appToRowSeguro(patch, table);
       delete row.user_id; // nunca permitir trocar o dono de um registro por aqui
       delete row[camelToSnake(idField)];
       const { data, error } = await supabase.from(table).update(row).eq(idField, id).select().maybeSingle();
@@ -131,7 +136,13 @@ function makeSingletonRepo(table) {
     async save(patch) {
       const userId = await getCurrentUserId();
       if (!userId) return fail({ message: "Sem sessão autenticada.", code: "42501" });
-      const row = { ...appToRow(patch), user_id: userId };
+      // CORREÇÃO (auditoria preventiva) — mesma proteção de
+      // `makeListRepo`. Hoje `settings.comissaoPct`/`noitesMes`/
+      // `duracaoMediaEstadia` já chegam sempre como número (o formulário
+      // usa `toNum()` antes de chamar `setSettings`) — esta é uma camada
+      // de proteção adicional, sem mudar nenhum comportamento observável
+      // hoje.
+      const row = { ...appToRowSeguro(patch, table), user_id: userId };
       const { data, error } = await supabase.from(table).upsert(row, { onConflict: "user_id" }).select().single();
       if (error) return fail(error);
       return ok(rowToApp(data));
