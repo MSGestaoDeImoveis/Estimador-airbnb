@@ -1,5 +1,15 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { MS_LOGO_DATA_URI } from "./logo.js";
+import {
+  comparablesRepo, settingsRepo, historicoRepo, apresentacaoRepo, parceriaRepo,
+  proprietariosRepo, prestadoresRepo, parceirosRepo, imoveisRepo, reservasRepo,
+  indicacoesRepo, limpezaRepo, lavanderiaRepo, enxovalRepo, manutencaoRepo,
+  pendenciasRepo, onboardingChecklistRepo, financeiroRepo, comissoesRepo,
+  repassesRepo, repassesParceirosRepo,
+} from "./supabaseData.js";
+import {
+  diffEAplicarLista, diffEAplicarOnboarding, salvarSingleton, carregarGestaoDoSupabase, idOnboarding,
+} from "./gestaoDataBridge.js";
 
 /* =========================================================================
    TOKENS / CONSTANTS
@@ -561,15 +571,26 @@ const DEMO_COMPARABLES = [
 ];
 
 /* =========================================================================
-   STORAGE
+   STORAGE (FASE 3/pré-Fase 4)
    ========================================================================= */
 
-// NOTE: the only technical change made to port this from a Claude Artifact
-// (which used window.storage) to a standalone local app is this storage
-// layer. It now reads/writes the browser's localStorage instead, which is
-// the correct and standard mechanism for a private, offline, single-user
-// local application. Every function signature below is unchanged, so
-// nothing else in this file had to be touched.
+// FASE 4 — estas duas funções NÃO são mais chamadas pelo carregamento
+// inicial nem pelos setters principais do app (ver mais abaixo, seção
+// "FASE 4 — CAMADA DE DADOS"): a partir desta fase, o Supabase (via
+// supabaseData.js, a camada da Fase 2) é a fonte única dos dados do
+// aplicativo. Estas funções ficam aqui, sem uso, por três motivos práticos
+// e documentados no relatório da Fase 4 (seção G):
+//   1) nenhuma leitura real de localStorage acontece mais no fluxo
+//      principal — não seria correto simplesmente apagar a função que
+//      define esse contrato sem re-auditar cada chamador;
+//   2) a Fase 3 (ferramenta de migração) e um eventual botão futuro de
+//      "reimportar backup local" continuam podendo precisar de uma leitura
+//      pontual e explícita do localStorage;
+//   3) remover esta camada de utilidades não muda nenhum comportamento
+//      hoje (já não é chamada) — só reduziria uma "rede de segurança" que
+//      ainda não foi decidida como descartável.
+// Nenhuma chave nova é gravada aqui; o localStorage do usuário permanece
+// exatamente como estava (Regra 3 da Fase 4).
 const LOCAL_STORAGE_PREFIX = "estimador-airbnb-maringa:";
 async function loadJSON(key, fallback) {
   try {
@@ -588,6 +609,18 @@ async function saveJSON(key, value) {
     return false;
   }
 }
+
+// FASE 4 — mapa módulo→repositório da Gestão de Imóveis (os mesmos 15
+// repositórios "em lista" exportados por supabaseData.js; onboarding é
+// tratado à parte, por ser um dicionário, não uma lista — ver
+// gestaoDataBridge.js). Usado por setGestaoModuleData, mais abaixo.
+const GESTAO_REPO_POR_MODULO = {
+  proprietarios: proprietariosRepo, prestadores: prestadoresRepo, parceiros: parceirosRepo,
+  imoveis: imoveisRepo, reservas: reservasRepo, indicacoes: indicacoesRepo,
+  limpeza: limpezaRepo, lavanderia: lavanderiaRepo, enxoval: enxovalRepo,
+  manutencao: manutencaoRepo, pendencias: pendenciasRepo, financeiro: financeiroRepo,
+  comissoes: comissoesRepo, repasses: repassesRepo, repassesParceiros: repassesParceirosRepo,
+};
 
 /* =========================================================================
    STYLE
@@ -1996,7 +2029,7 @@ function SettingsScreen({ settings, setSettings, onExportBackup, onImportBackup 
             <input type="file" accept="application/json" style={{ display: "none" }} onChange={onImportBackup} />
           </label>
         </div>
-        <p className="footnote" style={{ marginTop: 8 }}>Importar um backup substitui os dados atuais deste computador pelos dados do arquivo.</p>
+        <p className="footnote" style={{ marginTop: 8 }}>Importar um backup substitui os dados atuais da sua conta pelos dados do arquivo.</p>
       </div>
     </div>
   );
@@ -3445,11 +3478,23 @@ const GESTAO_DEPENDENCIAS = {
 };
 function gestaoDependentesParaExcluir(allData, moduleKey, id) {
   const regras = GESTAO_DEPENDENCIAS[moduleKey];
-  if (!regras) return [];
   const encontrados = [];
-  for (const [refModule, refKey, label] of regras) {
-    const n = (allData[refModule] || []).filter((r) => r[refKey] === id).length;
-    if (n > 0) encontrados.push(`${n} ${label}`);
+  if (regras) {
+    for (const [refModule, refKey, label] of regras) {
+      const n = (allData[refModule] || []).filter((r) => r[refKey] === id).length;
+      if (n > 0) encontrados.push(`${n} ${label}`);
+    }
+  }
+  // CORREÇÃO (auditoria da Fase 5, achado A1) — onboardingChecklists é um
+  // dicionário { [imovelId]: { [item]: bool } }, não uma lista, então não
+  // cabe no formato genérico de GESTAO_DEPENDENCIAS acima. A tabela
+  // onboarding_checklist_itens tem imovel_id com "on delete restrict"
+  // desde a Fase 1 — sem este bloco, o aviso amigável não mencionava esse
+  // vínculo, e a exclusão só falhava (com um erro genérico do Supabase)
+  // depois, no banco, em vez de um aviso específico como os demais.
+  if (moduleKey === "imoveis") {
+    const itensOnboarding = Object.keys((allData.onboardingChecklists && allData.onboardingChecklists[id]) || {}).length;
+    if (itensOnboarding > 0) encontrados.push(`${itensOnboarding} item(ns) de onboarding`);
   }
   return encontrados;
 }
@@ -4514,40 +4559,299 @@ export default function App() {
   const [gestaoModule, setGestaoModule] = useState(null);
 
   useEffect(() => {
+    let cancelado = false;
     (async () => {
-      const savedComps = await loadJSON("comparables", null);
-      const savedSettings = await loadJSON("settings", null);
-      const savedHistorico = await loadJSON("historicoAnalises", null);
-      const savedGestao = await loadJSON("gestaoImoveis", null);
-      // Only seed demo data the very first time (key never saved before).
-      // If the person has since saved an empty list on purpose, respect that.
-      setComparablesState(savedComps !== null ? savedComps : DEMO_COMPARABLES);
-      setSettingsState(normalizeSettings(savedSettings));
-      setHistoricoState(Array.isArray(savedHistorico) ? savedHistorico : []);
-      setGestaoDataState(savedGestao && typeof savedGestao === "object" ? savedGestao : {});
+      const [comparablesR, settingsR, historicoR, gestaoR, apresentacaoR, parceriaR] = await Promise.all([
+        comparablesRepo.getAll(),
+        settingsRepo.get(),
+        historicoRepo.getAll(),
+        carregarGestaoDoSupabase({
+          proprietariosRepo, prestadoresRepo, parceirosRepo, imoveisRepo, reservasRepo,
+          indicacoesRepo, limpezaRepo, lavanderiaRepo, enxovalRepo, manutencaoRepo,
+          pendenciasRepo, financeiroRepo, comissoesRepo, repassesRepo, repassesParceirosRepo,
+          onboardingChecklistRepo,
+        }),
+        // CORREÇÃO — Apresentação e Parceria agora fazem parte do MESMO
+        // carregamento inicial que segura `ready`. Antes, cada uma tinha seu
+        // próprio useEffect independente; como `ready` não esperava por eles,
+        // a tela principal liberava a interação antes desses dois
+        // carregamentos terminarem — e, se o usuário editasse Apresentação ou
+        // Parceria nesse intervalo, a resposta atrasada do carregamento
+        // podia chegar depois e sobrescrever a edição do usuário com o valor
+        // antigo do servidor. Colocando as duas consultas neste mesmo
+        // Promise.all (sem duplicar nada — são as MESMAS chamadas que já
+        // existiam, só que agora tratadas aqui), a tela só fica disponível
+        // depois que as duas já terminaram, e não existe mais uma resposta
+        // "atrasada" capaz de chegar depois de uma edição do usuário.
+        apresentacaoRepo.get(),
+        parceriaRepo.get(),
+      ]);
+      if (cancelado) return;
+
+      const errosCarregamento = [];
+      if (!comparablesR.ok) errosCarregamento.push({ modulo: "comparables", erro: comparablesR.error });
+      if (!settingsR.ok) errosCarregamento.push({ modulo: "settings", erro: settingsR.error });
+      if (!historicoR.ok) errosCarregamento.push({ modulo: "historicoAnalises", erro: historicoR.error });
+      if (gestaoR.erros.length) errosCarregamento.push(...gestaoR.erros);
+      if (!apresentacaoR.ok) errosCarregamento.push({ modulo: "apresentacao_config", erro: apresentacaoR.error });
+      if (!parceriaR.ok) errosCarregamento.push({ modulo: "parceria_config", erro: parceriaR.error });
+
+      // FASE 4 — o Supabase é a fonte única de dados. Antes, uma lista vazia
+      // recebia dados de demonstração só na primeiríssima vez (localStorage
+      // nunca gravado = null; lista vazia salva de propósito = []). Com o
+      // Supabase não existe mais esse "nunca gravado": toda conta autenticada
+      // já tem uma linha (mesmo vazia) assim que consulta a tabela. Preencher
+      // com dados de demonstração aqui seria inventar dados que o usuário não
+      // tem (proibido pela Fase 4/Fase 3) — por isso essa semeadura automática
+      // foi removida nesta fase; ela está documentada como mudança de
+      // comportamento no relatório final (seção L).
+      setComparablesState(comparablesR.ok ? comparablesR.data : []);
+      setSettingsState(normalizeSettings(settingsR.ok ? settingsR.data : null));
+      setHistoricoState(historicoR.ok ? historicoR.data : []);
+      setGestaoDataState(gestaoR.data);
+      // CORREÇÃO (auditoria da Fase 5, achado A2) — os refs usados pelos
+      // setters (mais abaixo) precisam refletir o estado carregado desde já,
+      // de forma síncrona, e não só depois que o useEffect de sincronização
+      // rodar.
+      comparablesRef.current = comparablesR.ok ? comparablesR.data : [];
+      historicoRef.current = historicoR.ok ? historicoR.data : [];
+      gestaoDataRef.current = gestaoR.data;
+      // Mesmo comportamento de antes: só sobrescreve o DEFAULT quando existir
+      // um valor salvo; se não existir registro para o usuário (r.data null,
+      // ou o campo específico ausente), o valor DEFAULT já presente no
+      // estado inicial é preservado (nenhuma mudança de comportamento aqui).
+      if (apresentacaoR.ok && apresentacaoR.data) {
+        if (apresentacaoR.data.apresentacaoTexts) setApresentacaoTextsState({ ...DEFAULT_APRESENTACAO_TEXTS, ...apresentacaoR.data.apresentacaoTexts });
+        if (apresentacaoR.data.apresentacaoFoto) setApresentacaoFotoState(apresentacaoR.data.apresentacaoFoto);
+      }
+      if (parceriaR.ok && parceriaR.data) {
+        if (parceriaR.data.parceriaConfig) setParceriaConfigState({ ...DEFAULT_PARCERIA, ...parceriaR.data.parceriaConfig });
+        setParceiroContador(parceriaR.data.parceiroContador || 0);
+      }
+
+      if (errosCarregamento.length > 0) {
+        setSaveError(true);
+        // eslint-disable-next-line no-console
+        console.error("[Supabase] Falha ao carregar dados iniciais:", errosCarregamento);
+      }
       setReady(true);
     })();
+    return () => { cancelado = true; };
   }, []);
 
+  // Refs com o último estado CONFIRMADO — usadas pelos setters abaixo para
+  // calcular o diff (o que mudou) antes de chamar o Supabase, sem precisar
+  // depender de closures desatualizadas.
+  const comparablesRef = useRef([]);
+  useEffect(() => { comparablesRef.current = comparables; }, [comparables]);
+  const historicoRef = useRef([]);
+  useEffect(() => { historicoRef.current = historico; }, [historico]);
+  const gestaoDataRef = useRef({});
+  useEffect(() => { gestaoDataRef.current = gestaoData; }, [gestaoData]);
+
+  // CORREÇÃO (auditoria da Fase 6, achado A5) — quando uma gravação falha,
+  // o código antigo substituía a lista INTEIRA do módulo pelo snapshot que
+  // aquela chamada tinha no início. Se, nesse meio-tempo, outra chamada
+  // (para outro registro do mesmo módulo) já tivesse confirmado uma
+  // alteração com sucesso, essa substituição apagava a alteração da outra
+  // chamada do estado visível — mesmo o dado já estando correto no
+  // Supabase. Esta função corrige só os ids que ESTA chamada específica
+  // não conseguiu confirmar (presentes em `erros`), tocando o estado ATUAL
+  // (que já pode refletir outra operação concorrente) em vez de substituir
+  // a lista inteira. Um id sem erro nesta chamada nunca é tocado aqui —
+  // continua exatamente como está no estado atual, seja porque já estava
+  // correto, seja porque outra operação o alterou depois.
+  function mesclarCorrecaoPorId(listaAtual, idField, erros, itensFinais) {
+    const finalPorId = new Map((itensFinais || []).map((x) => [x[idField], x]));
+    const idsComErro = new Set((erros || []).map((e) => e.id).filter((id) => id !== undefined));
+    const resultado = [];
+    const vistos = new Set();
+    for (const item of listaAtual || []) {
+      const id = item[idField];
+      vistos.add(id);
+      if (!idsComErro.has(id)) { resultado.push(item); continue; }
+      if (finalPorId.has(id)) resultado.push(finalPorId.get(id));
+      // senão: era uma criação que falhou — corretamente não entra no resultado.
+    }
+    for (const [id, item] of finalPorId) {
+      if (idsComErro.has(id) && !vistos.has(id)) resultado.push(item); // exclusão que falhou, item já não estava mais na lista atual
+    }
+    return resultado;
+  }
+
+  // FASE 4 — cada setter abaixo: (1) atualiza o estado React imediatamente
+  // (mesma sensação de resposta instantânea de antes), e (2) envia só o que
+  // mudou para o Supabase via a camada da Fase 2; se o Supabase recusar
+  // algo, o estado é corrigido para refletir só o que foi realmente
+  // confirmado, e o aviso "Não foi possível salvar…" aparece (Regra 10 —
+  // nunca esconder erro, nunca mostrar como salvo o que não foi).
   const setComparables = useCallback((next) => {
+    // CORREÇÃO (auditoria da Fase 5, achado A2) — mesma correção aplicada
+    // a `setGestaoModuleData`: `comparablesRef.current` agora é atualizado
+    // de forma síncrona, no mesmo instante em que o novo estado é montado,
+    // fechando a mesma janela de corrida (duas gravações muito próximas
+    // usando um "anterior" desatualizado).
+    const anterior = comparablesRef.current;
+    comparablesRef.current = next;
     setComparablesState(next);
-    saveJSON("comparables", next).then((ok) => { if (!ok) setSaveError(true); });
+    diffEAplicarLista(comparablesRepo, "id", anterior, next).then(({ itensFinais, erros }) => {
+      if (erros.length > 0) {
+        setSaveError(true);
+        // CORREÇÃO (auditoria da Fase 6, achado A5) — antes, este bloco
+        // substituía `comparablesRef.current`/o estado inteiro por
+        // `itensFinais` (o snapshot desta chamada). Se outra chamada a
+        // `setComparables` tivesse alterado um OUTRO comparável com sucesso
+        // nesse meio-tempo, essa substituição apagava essa alteração do
+        // estado visível. Agora a correção mescla por id, no estado ATUAL,
+        // tocando só os ids que ESTA chamada não conseguiu confirmar.
+        const corrigido = mesclarCorrecaoPorId(comparablesRef.current, "id", erros, itensFinais);
+        comparablesRef.current = corrigido;
+        setComparablesState(corrigido);
+        // eslint-disable-next-line no-console
+        console.error("[Supabase] Falha ao salvar comparáveis:", erros);
+      }
+    });
   }, []);
   const setSettings = useCallback((next) => {
     setSettingsState(next);
-    saveJSON("settings", next).then((ok) => { if (!ok) setSaveError(true); });
+    salvarSingleton(settingsRepo, next).then(({ ok, erro }) => {
+      if (!ok) {
+        setSaveError(true);
+        // eslint-disable-next-line no-console
+        console.error("[Supabase] Falha ao salvar configurações:", erro);
+      }
+    });
   }, []);
+  // Aceita tanto um valor quanto uma função atualizadora (mesmo padrão do
+  // setState nativo do React) — necessário porque handleAnalyze() chama
+  // setHistorico(prev => …); antes da Fase 4 isso gerava uma gravação
+  // duplicada no localStorage (uma delas, com o valor errado, sempre
+  // sobrescrita logo em seguida pela correta) — um efeito colateral inofensivo
+  // com localStorage, mas que quebraria a gravação no Supabase se copiado
+  // como estava. Resolver a função aqui, uma única vez, corrige isso sem
+  // mudar nenhum dado exibido no Histórico.
   const setHistorico = useCallback((next) => {
-    setHistoricoState(next);
-    saveJSON("historicoAnalises", next).then((ok) => { if (!ok) setSaveError(true); });
+    // CORREÇÃO (auditoria da Fase 5, achado A2) — mesma correção de
+    // `comparablesRef`/`gestaoDataRef`: atualização síncrona.
+    const anterior = historicoRef.current;
+    const resolvido = typeof next === "function" ? next(anterior) : next;
+    historicoRef.current = resolvido;
+    setHistoricoState(resolvido);
+    diffEAplicarLista(historicoRepo, "codigo", anterior, resolvido).then(({ itensFinais, erros }) => {
+      if (erros.length > 0) {
+        setSaveError(true);
+        // CORREÇÃO (auditoria da Fase 6, achado A5) — mesma correção do
+        // `setComparables` acima: mescla por id no estado ATUAL, tocando só
+        // os códigos que esta chamada não conseguiu confirmar.
+        const corrigido = mesclarCorrecaoPorId(historicoRef.current, "codigo", erros, itensFinais);
+        historicoRef.current = corrigido;
+        setHistoricoState(corrigido);
+        // eslint-disable-next-line no-console
+        console.error("[Supabase] Falha ao salvar histórico de análises:", erros);
+      }
+    });
+    return resolvido;
   }, []);
-  // NOVO — atualiza apenas um sub-módulo da Gestão de Imóveis (ex.: "imoveis",
-  // "reservas") dentro do objeto único persistido em `gestaoImoveis`.
-  const setGestaoModuleData = useCallback((moduleKey, items) => {
-    setGestaoDataState((prev) => {
-      const next = { ...prev, [moduleKey]: items };
-      saveJSON("gestaoImoveis", next).then((ok) => { if (!ok) setSaveError(true); });
-      return next;
+  // Atualiza um sub-módulo da Gestão de Imóveis (ex.: "imoveis", "reservas").
+  // Assinatura idêntica à de antes — quem chama (dezenas de pontos em
+  // GestaoCrudScreen e nas telas de Onboarding/Financeiro/Comissões/etc.)
+  // não precisou mudar. "onboardingChecklists" é tratado à parte por ser um
+  // dicionário, não uma lista (ver gestaoDataBridge.js).
+  const setGestaoModuleData = useCallback((moduleKey, itemsOuDict) => {
+    // CORREÇÃO (auditoria da Fase 5, achado A2) — antes, `anterior` vinha
+    // de `gestaoDataRef.current`, que só era sincronizado por um
+    // `useEffect` (assíncrono, roda depois do commit). Se duas chamadas
+    // para o MESMO módulo ocorressem antes desse efeito rodar, a segunda
+    // calculava seu diff contra um snapshot desatualizado — no pior caso,
+    // um item já excluído podia reaparecer visualmente. Agora
+    // `gestaoDataRef.current` é atualizado de forma SÍNCRONA, no mesmo
+    // instante em que o novo estado é montado, antes de qualquer `await`
+    // — a próxima chamada (mesmo que ocorra imediatamente em seguida,
+    // antes de qualquer re-render) já lê o valor correto e atualizado.
+    const anterior = gestaoDataRef.current;
+    const proximoEstado = { ...anterior, [moduleKey]: itemsOuDict };
+    gestaoDataRef.current = proximoEstado;
+    setGestaoDataState(proximoEstado);
+
+    if (moduleKey === "onboardingChecklists") {
+      const dictAnteriorOnboarding = anterior.onboardingChecklists || {};
+      diffEAplicarOnboarding(onboardingChecklistRepo, dictAnteriorOnboarding, itemsOuDict).then(({ dictFinal, erros }) => {
+        if (erros.length > 0) {
+          setSaveError(true);
+          // CORREÇÃO (auditoria da Fase 6, achado A5) — mesmo princípio do
+          // `mesclarCorrecaoPorId`, adaptado ao onboarding (dicionário em
+          // vez de lista): descobre exatamente quais pares
+          // (imóvel, item) esta chamada tentou mudar, cruza com os que
+          // tiveram erro (pelo id determinístico) e corrige só esses pares
+          // no dicionário ATUAL — nunca substitui o dicionário inteiro, que
+          // poderia já refletir uma marcação de outro imóvel feita por
+          // outra chamada concorrente.
+          const idsComErro = new Set(erros.map((e) => e.id).filter((id) => id !== undefined));
+          const dictAtual = gestaoDataRef.current.onboardingChecklists || {};
+          const dictCorrigido = { ...dictAtual };
+          const imoveisEnvolvidos = new Set([...Object.keys(dictAnteriorOnboarding), ...Object.keys(itemsOuDict || {})]);
+          for (const imovelId of imoveisEnvolvidos) {
+            const itensAntes = dictAnteriorOnboarding[imovelId] || {};
+            const itensDepois = (itemsOuDict && itemsOuDict[imovelId]) || {};
+            const chavesDeItens = new Set([...Object.keys(itensAntes), ...Object.keys(itensDepois)]);
+            for (const item of chavesDeItens) {
+              const idDeterministico = idOnboarding(imovelId, item);
+              if (!idsComErro.has(idDeterministico)) continue; // esta chamada não teve erro neste item específico
+              const valorFinal = dictFinal && dictFinal[imovelId] ? dictFinal[imovelId][item] : undefined;
+              if (valorFinal === undefined) {
+                if (dictCorrigido[imovelId]) {
+                  const { [item]: _removido, ...resto } = dictCorrigido[imovelId];
+                  dictCorrigido[imovelId] = resto;
+                }
+              } else {
+                dictCorrigido[imovelId] = { ...dictCorrigido[imovelId], [item]: valorFinal };
+              }
+            }
+          }
+          gestaoDataRef.current = { ...gestaoDataRef.current, onboardingChecklists: dictCorrigido };
+          setGestaoDataState(gestaoDataRef.current);
+          // eslint-disable-next-line no-console
+          console.error("[Supabase] Falha ao salvar onboarding:", erros);
+        }
+      });
+      return;
+    }
+
+    const repo = GESTAO_REPO_POR_MODULO[moduleKey];
+    if (!repo) {
+      // CORREÇÃO (auditoria da Fase 5, achado A3) — este branch já tinha
+      // atualizado o estado de forma otimista (acima) antes de descobrir
+      // que não existe repositório para este módulo; sem `setSaveError`,
+      // o usuário não recebia nenhum aviso de que nada foi salvo. Hoje
+      // este branch é inalcançável pelo menu atual (todo `moduleKey`
+      // usado pela interface tem repositório correspondente) — a correção
+      // é só uma rede de segurança para o futuro, sem mudar nenhum
+      // comportamento existente.
+      setSaveError(true);
+      // eslint-disable-next-line no-console
+      console.error("[Supabase] Módulo de Gestão de Imóveis desconhecido (sem repositório):", moduleKey);
+      return;
+    }
+    const anterioresDoModulo = anterior[moduleKey] || [];
+    diffEAplicarLista(repo, "id", anterioresDoModulo, itemsOuDict).then(({ itensFinais, erros }) => {
+      if (erros.length > 0) {
+        setSaveError(true);
+        // CORREÇÃO (auditoria da Fase 6, achado A5) — antes, esta linha
+        // substituía `gestaoDataRef.current[moduleKey]` inteiro por
+        // `itensFinais` (o snapshot desta chamada). Reproduzido e
+        // comprovado em `tests/fase6/test-correcao-a5.mjs`: se outra
+        // chamada tivesse alterado com sucesso OUTRO registro do mesmo
+        // módulo nesse meio-tempo, essa substituição apagava essa
+        // alteração do estado visível (embora o dado já estivesse correto
+        // no Supabase). Agora a correção mescla por id, no estado ATUAL,
+        // tocando só os ids que ESTA chamada não conseguiu confirmar.
+        const listaAtual = gestaoDataRef.current[moduleKey] || [];
+        const corrigido = mesclarCorrecaoPorId(listaAtual, "id", erros, itensFinais);
+        gestaoDataRef.current = { ...gestaoDataRef.current, [moduleKey]: corrigido };
+        setGestaoDataState(gestaoDataRef.current);
+        // eslint-disable-next-line no-console
+        console.error(`[Supabase] Falha ao salvar ${moduleKey}:`, erros);
+      }
     });
   }, []);
 
@@ -4570,9 +4874,15 @@ export default function App() {
         target,
         result: r,
       };
-      const next = [registro, ...prevHistorico];
-      saveJSON("historicoAnalises", next).then((ok) => { if (!ok) setSaveError(true); });
-      return next;
+      // FASE 4 — a gravação (agora no Supabase, via a própria setHistorico)
+      // já acontece dentro do wrapper, a partir do valor resolvido por esta
+      // função atualizadora. Não há mais uma chamada de gravação separada
+      // aqui dentro (antes havia uma chamada a saveJSON redundante, que
+      // sempre escrevia no localStorage um valor incorreto e era imediatamente
+      // sobrescrita pelo valor certo — inofensivo com localStorage, mas
+      // seria uma segunda gravação, com dado errado, se copiada como estava
+      // para o Supabase; por isso foi removida aqui, não em nenhum outro lugar).
+      return [registro, ...prevHistorico];
     });
   };
   const handleExcludeComp = (id) => {
@@ -4617,49 +4927,71 @@ export default function App() {
     e.target.value = "";
   };
 
-  // --- NOVO: textos editáveis + foto opcional da aba Apresentação (persistidos localmente) ---
+  // --- Apresentação: textos editáveis + foto opcional (Fase 4: Supabase, apresentacao_config) ---
   const [apresentacaoTexts, setApresentacaoTextsState] = useState(DEFAULT_APRESENTACAO_TEXTS);
   const [apresentacaoFoto, setApresentacaoFotoState] = useState(null);
   const [exportingPdf, setExportingPdf] = useState(false);
   const presentationExportRef = React.useRef(null);
-  useEffect(() => {
-    loadJSON("apresentacaoTexts", null).then((saved) => {
-      if (saved) setApresentacaoTextsState({ ...DEFAULT_APRESENTACAO_TEXTS, ...saved });
-    });
-    loadJSON("apresentacaoFoto", null).then((saved) => {
-      if (saved) setApresentacaoFotoState(saved);
-    });
-  }, []);
+  // CORREÇÃO — o carregamento inicial de Apresentação foi movido para dentro
+  // do mesmo Promise.all que controla `ready` (ver o efeito principal, no
+  // início do componente). Não existe mais um useEffect separado aqui: a
+  // mesma consulta (apresentacaoRepo.get()) não é duplicada, só passou a
+  // ser aguardada antes de liberar a tela — isso evita que uma resposta
+  // atrasada de carregamento chegue depois de uma edição do usuário e a
+  // sobrescreva.
   const setApresentacaoTexts = useCallback((next) => {
     setApresentacaoTextsState(next);
-    saveJSON("apresentacaoTexts", next);
+    salvarSingleton(apresentacaoRepo, { apresentacaoTexts: next }).then(({ ok, erro }) => {
+      if (!ok) {
+        setSaveError(true);
+        // eslint-disable-next-line no-console
+        console.error("[Supabase] Falha ao salvar Apresentação (textos):", erro);
+      }
+    });
   }, []);
   const setApresentacaoFoto = useCallback((next) => {
     setApresentacaoFotoState(next);
-    saveJSON("apresentacaoFoto", next);
+    salvarSingleton(apresentacaoRepo, { apresentacaoFoto: next }).then(({ ok, erro }) => {
+      if (!ok) {
+        setSaveError(true);
+        // eslint-disable-next-line no-console
+        console.error("[Supabase] Falha ao salvar Apresentação (foto):", erro);
+      }
+    });
   }, []);
 
-  // --- NOVO: Parceria com Corretores (módulo independente, persistido à parte) ---
+  // --- Parceria com Corretores (Fase 4: Supabase, parceria_config) ---
   const [parceriaConfig, setParceriaConfigState] = useState(DEFAULT_PARCERIA);
   const [parceiroContador, setParceiroContador] = useState(0);
   const [parceriaQrDataUrl, setParceriaQrDataUrl] = useState(null);
   const [exportingParceriaPdf, setExportingParceriaPdf] = useState(false);
   const parceriaExportRef = React.useRef(null);
-  useEffect(() => {
-    loadJSON("parceriaConfig", null).then((saved) => {
-      if (saved) setParceriaConfigState({ ...DEFAULT_PARCERIA, ...saved });
-    });
-    loadJSON("parceiroContador", 0).then((saved) => setParceiroContador(saved || 0));
-  }, []);
+  // CORREÇÃO — mesmo raciocínio da Apresentação, logo acima: o carregamento
+  // de Parceria também passou a fazer parte do Promise.all que controla
+  // `ready`, sem duplicar a consulta (parceriaRepo.get()) nem criar uma
+  // segunda fonte de estado.
   const setParceriaConfig = useCallback((next) => {
     setParceriaConfigState(next);
-    saveJSON("parceriaConfig", next);
+    salvarSingleton(parceriaRepo, { parceriaConfig: next }).then(({ ok, erro }) => {
+      if (!ok) {
+        setSaveError(true);
+        // eslint-disable-next-line no-console
+        console.error("[Supabase] Falha ao salvar Parceria (config):", erro);
+      }
+    });
   }, []);
   const handleGerarCodigoParceiro = () => {
     setParceiroContador((prev) => {
       const novoContador = prev + 1;
-      saveJSON("parceiroContador", novoContador);
-      setParceriaConfig({ ...parceriaConfig, codigoParceiro: generatePartnerCode(novoContador) });
+      const novaConfig = { ...parceriaConfig, codigoParceiro: generatePartnerCode(novoContador) };
+      setParceriaConfigState(novaConfig);
+      salvarSingleton(parceriaRepo, { parceriaConfig: novaConfig, parceiroContador: novoContador }).then(({ ok, erro }) => {
+        if (!ok) {
+          setSaveError(true);
+          // eslint-disable-next-line no-console
+          console.error("[Supabase] Falha ao salvar Parceria (contador/código):", erro);
+        }
+      });
       return novoContador;
     });
   };
@@ -4761,16 +5093,77 @@ export default function App() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
+      let data;
       try {
-        const data = JSON.parse(reader.result);
-        if (!window.confirm("Isso vai substituir os dados atuais deste computador pelos dados do arquivo de backup. Continuar?")) return;
-        if (Array.isArray(data.comparables)) setComparables(data.comparables);
-        if (data.settings) setSettings(data.settings);
-        if (data.apresentacaoTexts) setApresentacaoTexts(data.apresentacaoTexts);
-        window.alert("Backup importado com sucesso.");
+        data = JSON.parse(reader.result);
       } catch (err) {
         window.alert("Não foi possível ler este arquivo. Verifique se é um backup exportado por esta ferramenta.");
+        return;
       }
+      if (!window.confirm("Isso vai substituir os dados atuais da sua conta pelos dados do arquivo de backup. Continuar?")) return;
+
+      // CORREÇÃO — antes, a mensagem de sucesso aparecia logo depois de
+      // disparar os setters (que gravam no Supabase de forma assíncrona,
+      // em segundo plano), sem esperar a confirmação. Agora o fluxo do
+      // backup aguarda cada gravação necessária terminar antes de decidir
+      // qual mensagem mostrar. Isto usa diretamente as mesmas funções da
+      // ponte de dados (diffEAplicarLista/salvarSingleton) já usadas pelos
+      // setters normais — não duplica lógica nem cria uma segunda ponte —
+      // apenas localmente, só para este fluxo, sem alterar
+      // setComparables/setSettings/setApresentacaoTexts usados no resto do
+      // app (Regra 10 da correção: "faça isso apenas localmente para esse
+      // fluxo, preservando a API e o comportamento do restante do
+      // aplicativo").
+      (async () => {
+        const erros = [];
+
+        if (Array.isArray(data.comparables)) {
+          const anterior = comparablesRef.current;
+          comparablesRef.current = data.comparables;
+          setComparablesState(data.comparables);
+          const { itensFinais, erros: errosComp } = await diffEAplicarLista(comparablesRepo, "id", anterior, data.comparables);
+          if (errosComp.length > 0) {
+            // CORREÇÃO (auditoria da Fase 6, achado A5) — mesma correção de
+            // `setComparables`: mescla por id no estado ATUAL em vez de
+            // substituir a lista inteira.
+            const corrigido = mesclarCorrecaoPorId(comparablesRef.current, "id", errosComp, itensFinais);
+            comparablesRef.current = corrigido;
+            setComparablesState(corrigido); // mantém só o que o Supabase confirmou
+            erros.push(...errosComp.map((er) => ({ modulo: "comparables", ...er })));
+          }
+        }
+
+        if (data.settings) {
+          const anterior = settings;
+          setSettingsState(data.settings);
+          const { ok, erro } = await salvarSingleton(settingsRepo, data.settings);
+          if (!ok) {
+            setSettingsState(anterior); // reverte para o último valor confirmado
+            erros.push({ modulo: "settings", erro });
+          }
+        }
+
+        if (data.apresentacaoTexts) {
+          const anterior = apresentacaoTexts;
+          setApresentacaoTextsState(data.apresentacaoTexts);
+          const { ok, erro } = await salvarSingleton(apresentacaoRepo, { apresentacaoTexts: data.apresentacaoTexts });
+          if (!ok) {
+            setApresentacaoTextsState(anterior); // reverte para o último valor confirmado
+            erros.push({ modulo: "apresentacaoTexts", erro });
+          }
+        }
+
+        if (erros.length > 0) {
+          setSaveError(true);
+          // eslint-disable-next-line no-console
+          console.error("[Supabase] Falha ao importar backup:", erros);
+          // Mensagem de erro já existente no app (mesma do banner da barra
+          // lateral) — nenhuma mensagem nova foi criada.
+          window.alert("Não foi possível salvar as últimas alterações.");
+        } else {
+          window.alert("Backup importado com sucesso.");
+        }
+      })();
     };
     reader.readAsText(file);
     e.target.value = "";
@@ -4798,7 +5191,7 @@ export default function App() {
         <div className="rmi-sidebar">
           <div className="rmi-brand">Inteligência de Mercado<br />Locação por Temporada<small>Maringá / PR</small></div>
           <Nav view={view} setView={setView} />
-          {saveError && <div className="footnote" style={{ marginTop: "auto", color: "#E7B9AE", padding: "10px 12px" }}>Não foi possível salvar as últimas alterações neste dispositivo.</div>}
+          {saveError && <div className="footnote" style={{ marginTop: "auto", color: "#E7B9AE", padding: "10px 12px" }}>Não foi possível salvar as últimas alterações.</div>}
         </div>
         <div className="rmi-mobile-nav"><Nav view={view} setView={setView} mobile /></div>
         <div className="rmi-main">
